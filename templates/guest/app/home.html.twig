@@ -1,0 +1,97 @@
+{% extends 'guest/app/_layout.html.twig' %}
+{% import 'components/icon.html.twig' as ui %}
+{% import 'components/ornament.html.twig' as deco %}
+
+{% block title %}{{ wedding.title }}{% endblock %}
+{% block section %}Start{% endblock %}
+{% block main_class %}app-main app-main--flush{% endblock %}
+
+{% block content %}
+    {% set cover = fresh|filter(m => m.type.value == 'photo')|first ?: fresh|first %}
+    {% set showPortrait = guest.portraitStatus or portraitOffered %}
+    <section class="hero bleed{{ cover ? '' : ' hero--plain' }}{{ showPortrait ? ' hero--portrait' : '' }}">
+        {% if cover %}<img class="hero__image" src="{{ media_url(cover, 'image/display') }}" alt="" aria-hidden="true">{% endif %}
+        <div class="hero__content">
+            {% if showPortrait %}
+                {{ include('guest/app/_portrait_frame.html.twig') }}
+            {% elseif not cover %}
+                <span class="hero__motif">{{ deco.motif('balloons', 128) }}</span>
+            {% endif %}
+            <p class="overline">{{ wedding.title }}{% if wedding.weddingDate %} · {{ wedding.weddingDate|format_date(pattern: 'd. MMMM y', locale: 'de') }}{% endif %}</p>
+            <h1 class="display">Hallo <em>{{ guest.displayName }}</em></h1>
+            <p class="lead">Schön, dass du heute mit uns feierst.</p>
+            {{ deco.sprig(132) }}
+        </div>
+    </section>
+
+    {% if canUpload %}
+        <div class="actions">
+            <a class="action-primary" href="{{ path('guest_upload', {slug: wedding.slug, kamera: 1}) }}">
+                <span class="action__icon">{{ ui.icon('camera', 26) }}</span>
+                <span><span class="action__title">Foto aufnehmen</span><span class="action__text">Halte den Moment fest</span></span>
+            </a>
+            <a class="action-secondary" href="{{ path('guest_upload', {slug: wedding.slug}) }}">
+                <span class="action__icon">{{ ui.icon('upload', 20) }}</span>
+                <span><span class="action__title">Aus der Galerie</span><span class="action__text">Fotos und Videos vom Handy teilen</span></span>
+            </a>
+        </div>
+    {% endif %}
+
+    {% if challenges is not empty %}
+        <section aria-labelledby="mission-title">
+            <div class="section-row">
+                <h2 id="mission-title" class="overline">{{ ui.icon('flag', 14) }} Aufgaben</h2>
+                <span class="overline">{{ completed|length }} / {{ challenges|length }}</span>
+            </div>
+            {% if activeChallenge %}
+                {% set aid = activeChallenge.id.toRfc4122 %}
+                <div class="mission card">
+                    <span class="mission__motif">{{ deco.motif(challenge_motif(activeChallenge.title), 88) }}</span>
+                    <p class="badge"><span class="dot"></span> Jetzt aktiv</p>
+                    <h3 class="mission__title">{{ activeChallenge.title }}</h3>
+                    {% if activeChallenge.description %}<p class="lead">{{ activeChallenge.description }}</p>{% endif %}
+                    {% if participants[aid] ?? 0 %}<p class="muted">{{ participants[aid] }} {{ participants[aid] == 1 ? 'Gast hat' : 'Gäste haben' }} schon mitgemacht</p>{% endif %}
+                    <a class="button button--primary" href="{{ path('guest_upload', {slug: wedding.slug, aufgabe: aid}) }}">{{ ui.icon('camera', 18) }} {{ activeChallenge.mediaType.value == 'video' ? 'Video drehen' : 'Mitmachen' }}</a>
+                </div>
+            {% else %}
+                <div class="mission card mission--quiet">
+                    {{ deco.motif(completed|length == challenges|length ? 'bottle' : 'polaroids', 72) }}
+                    <p class="lead">{{ completed|length == challenges|length ? 'Alle Aufgaben erledigt – großartig!' : 'Gerade ist keine Aufgabe aktiv. Schau später wieder vorbei.' }}</p>
+                </div>
+            {% endif %}
+            {% set upcoming = challenges|filter(c => c != activeChallenge)|slice(0, 3) %}
+            {% if upcoming is not empty %}<ul class="mission-list">
+                {% for c in upcoming %}
+                    {% set cid = c.id.toRfc4122 %}
+                    <li>
+                        <a href="{{ path('guest_challenge', {slug: wedding.slug, id: cid}) }}">
+                            <span>{{ c.title }}</span>
+                            <span class="muted">{% if completed[cid] ?? false %}✓ Erledigt{% elseif not c.hasStartedAt(now) %}Ab {{ c.startsAt|date('H:i') }} Uhr{% elseif c.hasEndedAt(now) %}Beendet{% else %}Offen{% endif %}</span>
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>{% endif %}
+            <p class="spaced"><a class="text-link" href="{{ path('guest_challenges', {slug: wedding.slug}) }}">Alle Aufgaben {{ ui.icon('next', 14) }}</a></p>
+        </section>
+    {% endif %}
+
+    <section aria-labelledby="fresh-title">
+        <div class="bunting-row">{{ deco.bunting(220) }}</div>
+        <div class="section-row">
+            <h2 id="fresh-title" class="headline-md">Frisch von der <em>Feier</em></h2>
+            <a class="text-link" href="{{ path('guest_gallery', {slug: wedding.slug}) }}">Alle</a>
+        </div>
+        {% if fresh is empty %}
+            <div class="empty-state card spaced">
+                {{ deco.motif('polaroids', 80) }}
+                <p class="lead">Noch nichts geteilt – sei der oder die Erste!</p>
+            </div>
+        {% else %}
+            <div class="strip bleed spaced" data-controller="lightbox gallery-motion" data-lightbox-token-value="{{ csrf_token('guest-action') }}">
+                {% for media in fresh %}
+                    {{ include('guest/app/_tile.html.twig') }}
+                {% endfor %}
+            </div>
+        {% endif %}
+    </section>
+{% endblock %}

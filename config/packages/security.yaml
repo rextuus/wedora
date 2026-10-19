@@ -1,0 +1,59 @@
+security:
+    password_hashers:
+        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
+        # Gemeinsames Hochzeitspasswort (kein Benutzerkonto).
+        wedding_password: 'auto'
+
+    providers:
+        app_users:
+            entity:
+                class: App\Account\Entity\User
+                property: email
+
+    firewalls:
+        dev:
+            pattern: ^/(_profiler|_wdt|assets|build)/
+            security: false
+
+        # Gäste: zustandslos, Cookie wird bei jeder Anfrage gegen die Datenbank geprüft.
+        guest:
+            pattern: ^/h/
+            stateless: true
+            provider: app_users
+            custom_authenticators:
+                - App\Security\Guest\GuestCookieAuthenticator
+            entry_point: App\Security\Guest\GuestEntryPoint
+
+        # Konten (Plattform- und Hochzeitsadministration).
+        main:
+            lazy: true
+            provider: app_users
+            form_login:
+                login_path: app_login
+                check_path: app_login
+                enable_csrf: true
+                default_target_path: app_admin
+            login_throttling:
+                max_attempts: 5
+                interval: '15 minutes'
+            logout:
+                path: app_logout
+
+    access_control:
+        - { path: ^/h/[^/]+/join, roles: PUBLIC_ACCESS }
+        - { path: ^/h/, roles: ROLE_GUEST }
+        - { path: ^/admin, roles: ROLE_USER }
+
+when@test:
+    security:
+        password_hashers:
+            Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
+                algorithm: auto
+                cost: 4
+                time_cost: 3
+                memory_cost: 10
+            wedding_password:
+                algorithm: auto
+                cost: 4
+                time_cost: 3
+                memory_cost: 10

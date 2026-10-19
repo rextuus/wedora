@@ -1,0 +1,20 @@
+{% import 'components/icon.html.twig' as ui %}
+{% set id = media.id.toRfc4122 %}
+<article class="media-card">
+    <a class="media-card__image" href="{{ path('guest_media', {slug: wedding.slug, id: id}) }}" data-turbo-frame="_top">
+        <img src="{{ media_url(media, 'image/thumb') }}" alt="{{ media.caption ?: (media.type.value == 'video' ? 'Video' : 'Foto') ~ ' von ' ~ (media.uploaderGuest.displayName ?? 'einem Gast') }}"
+             loading="lazy" decoding="async"{% if media.width and media.height %} width="{{ media.width }}" height="{{ media.height }}"{% endif %}>
+        <span class="chip chip--overlay">{{ media.uploaderGuest.displayName ?? 'Gast' }}</span>
+        {% if media.type.value == 'video' %}
+            <span class="media-card__play">{{ ui.icon('play', 28) }}</span>
+            <span class="chip chip--dark media-card__duration">{{ media.durationSeconds|duration }}</span>
+        {% endif %}
+    </a>
+    <div class="media-card__meta">
+        <div class="media-card__text">
+            {% if media.caption %}<p class="media-card__caption">{{ media.caption }}</p>{% endif %}
+            <p class="muted">{{ media.createdAt|ago }}</p>
+        </div>
+        {{ include('guest/app/_like.html.twig', {count: likeCounts[id] ?? 0, liked: liked[id] ?? false}) }}
+    </div>
+</article>

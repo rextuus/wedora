@@ -1,0 +1,21 @@
+{% extends 'admin/_layout.html.twig' %}
+
+{% block content %}
+    <div class="section-row">
+        <h1 class="headline-lg">Hochzeiten</h1>
+        {% if user.platformAdmin %}<a class="button button--primary" href="{{ path('admin_wedding_create') }}">Neue Hochzeit</a>{% endif %}
+    </div>
+    {% if weddings is empty %}
+        <p class="lead">{{ user.platformAdmin ? 'Noch keine Hochzeit angelegt.' : 'Dir ist noch keine Hochzeit zugeordnet.' }}</p>
+    {% endif %}
+    <ul class="admin-list">
+        {% for w in weddings %}
+            <li class="card">
+                <a class="admin-list__link" href="{{ path('admin_wedding', {slug: w.slug}) }}">
+                    <span class="headline-sm">{{ w.title }}</span>
+                    <span class="muted">{{ w.weddingDate ? w.weddingDate|format_date(pattern: 'd. MMMM y', locale: 'de') : 'ohne Datum' }} · /h/{{ w.slug }}{% if not w.active %} · archiviert{% endif %}</span>
+                </a>
+            </li>
+        {% endfor %}
+    </ul>
+{% endblock %}

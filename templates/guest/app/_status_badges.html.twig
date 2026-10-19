@@ -1,0 +1,9 @@
+<p class="badges">
+    {% if media.processingStatus.value == 'processing' %}<span class="status status--pending">Wird verarbeitet</span>{% endif %}
+    {% if media.processingStatus.value == 'failed' %}<span class="status status--error">Fehlgeschlagen</span>{% endif %}
+    {% if media.publicationStatus.value == 'pending' %}<span class="status status--pending">Wartet auf Freigabe</span>{% endif %}
+    {% if media.publicationStatus.value == 'rejected' %}<span class="status status--error">Nicht freigegeben</span>{% endif %}
+    {% if media.visibility.value == 'couple' %}<span class="status">Nur für das Brautpaar</span>{% endif %}
+    {% if media.visibility.value == 'uploader_only' %}<span class="status">Nur für dich</span>{% endif %}
+    {% if media.challenge %}<span class="status status--done">Aufgabe: {{ media.challenge.title }}</span>{% endif %}
+</p>

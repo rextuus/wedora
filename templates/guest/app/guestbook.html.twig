@@ -1,0 +1,67 @@
+{% extends 'guest/app/_layout.html.twig' %}
+{% import 'components/icon.html.twig' as ui %}
+{% import 'components/ornament.html.twig' as deco %}
+
+{% block title %}Gästebuch – {{ wedding.title }}{% endblock %}
+{% block section %}Gästebuch{% endblock %}
+
+{% block content %}
+    <header class="section-header">
+        <p class="overline">Gästebuch</p>
+        <h1 class="headline-lg">Worte für das <em>Brautpaar</em></h1>
+        {{ deco.sprig(110) }}
+    </header>
+
+    {% if canWrite %}
+        <section class="card" aria-labelledby="write-title">
+            <h2 id="write-title" class="headline-sm">Deine Nachricht</h2>
+            <form method="post" action="{{ path('guest_guestbook_write', {slug: wedding.slug}) }}" class="stack">
+                <input type="hidden" name="_token" value="{{ csrf_token('guest-action') }}">
+                <div class="field">
+                    <label for="message" class="visually-hidden">Nachricht</label>
+                    <textarea id="message" name="message" rows="4" maxlength="2000" required placeholder="Liebe {{ wedding.title }}, …"></textarea>
+                </div>
+                <fieldset class="choice-group">
+                    <legend>Wer darf es lesen?</legend>
+                    <label class="choice"><input type="radio" name="visibility" value="all_guests" checked> Alle Gäste</label>
+                    <label class="choice"><input type="radio" name="visibility" value="couple"> Nur das Brautpaar</label>
+                </fieldset>
+                <button class="button button--primary" type="submit">Eintragen</button>
+            </form>
+            <a class="button button--secondary" href="{{ path('guest_upload', {slug: wedding.slug, modul: 'guestbook'}) }}">{{ ui.icon('camera', 18) }} Foto- oder Video-Gruß</a>
+        </section>
+    {% endif %}
+
+    {% if items is empty %}
+        <div class="empty-state card">{{ deco.motif('envelope', 72) }}<p class="lead">Noch keine Einträge – schreib den ersten!</p></div>
+    {% endif %}
+
+    <ol class="guestbook">
+        {% for item in items %}
+            <li class="card guestbook__item">
+                {{ deco.corner(48) }}
+                {% if item.message is defined %}
+                    <blockquote class="guestbook__text">{{ item.message|nl2br }}</blockquote>
+                    <p class="muted">— {{ item.author.displayName }}, {{ item.createdAt|ago }}</p>
+                    {% if item.author.id.equals(guest.id) %}
+                        <p class="badges">
+                            {% if item.publicationStatus.value == 'pending' %}<span class="status status--pending">Wartet auf Freigabe</span>{% endif %}
+                            {% if item.publicationStatus.value == 'rejected' %}<span class="status status--error">Nicht freigegeben</span>{% endif %}
+                            {% if item.visibility.value == 'couple' %}<span class="status">Nur für das Brautpaar</span>{% endif %}
+                        </p>
+                        <form method="post" action="{{ path('guest_guestbook_delete', {slug: wedding.slug, id: item.id}) }}" data-turbo-confirm="Eintrag löschen?">
+                            <input type="hidden" name="_token" value="{{ csrf_token('guest-action') }}">
+                            <button class="link-button" type="submit">Löschen</button>
+                        </form>
+                    {% endif %}
+                {% else %}
+                    <div class="guestbook__media" data-controller="lightbox gallery-motion" data-lightbox-token-value="{{ csrf_token('guest-action') }}">
+                        {{ include('guest/app/_tile.html.twig', {media: item, likeCounts: {}, liked: {}}) }}
+                    </div>
+                    {% if item.caption %}<p>{{ item.caption }}</p>{% endif %}
+                    <p class="muted">— {{ item.uploaderGuest.displayName ?? 'Gast' }}, {{ item.createdAt|ago }}</p>
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ol>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends 'guest/app/_layout.html.twig' %}
+{% import 'components/icon.html.twig' as ui %}
+{% import 'components/ornament.html.twig' as deco %}
+
+{% block title %}Galerie – {{ wedding.title }}{% endblock %}
+{% block section %}Galerie{% endblock %}
+
+{% block content %}
+    <header class="section-header section-header--motif">
+        <span class="section-header__motif">{{ deco.motif('polaroids', 92) }}</span>
+        <p class="overline">Gemeinsames Album</p>
+        <h1 class="headline-lg">Alle <em>Momente</em></h1>
+    </header>
+
+    <nav class="tabs bleed bleed--padded" aria-label="Filter">
+        {% for f in filters %}
+            {% if f.value != 'gaestebuch' or wedding.module(enum('App\\Wedding\\ModuleType').Guestbook).enabled %}
+                <a href="{{ path('guest_gallery', {slug: wedding.slug, filter: f.value}) }}"{% if f == filter %} aria-current="page"{% endif %}>{{ f.label }}</a>
+            {% endif %}
+        {% endfor %}
+    </nav>
+
+    {% if items is empty %}
+        <section class="empty-state card">
+            {{ deco.motif('balloons', 88) }}
+            <p class="lead">Noch keine Momente{{ filter.value != 'alle' ? ' in dieser Auswahl' : '' }}.</p>
+            {% if canUpload %}<a class="button button--primary" href="{{ path('guest_upload', {slug: wedding.slug}) }}">Den ersten teilen</a>{% endif %}
+        </section>
+    {% else %}
+        <div class="tight-top" data-controller="lightbox gallery-motion" data-lightbox-token-value="{{ csrf_token('guest-action') }}">
+            {{ include('guest/app/_gallery_page.html.twig') }}
+        </div>
+        <div class="footer-note">{{ deco.sprig(90) }}<p>Mit Liebe gesammelt von allen Gästen</p></div>
+    {% endif %}
+
+    {% if canUpload %}
+        <a class="fab" href="{{ path('guest_upload', {slug: wedding.slug}) }}" aria-label="Foto hinzufügen">{{ ui.icon('camera', 24) }}</a>
+    {% endif %}
+{% endblock %}

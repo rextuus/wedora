@@ -1,0 +1,28 @@
+{# Ein Beitrag in der Moderation (Medium oder Gästebucheintrag) mit Aktionen. #}
+{% set isMedia = item.message is not defined %}
+{% set kind = isMedia ? 'media' : 'eintrag' %}
+<li class="card moderation-item">
+    {% if isMedia %}
+        {% if item.ready %}
+            {% if item.type.value == 'video' %}
+                <video class="moderation-item__media" controls preload="none" poster="{{ media_url(item, 'image/thumb') }}"><source src="{{ media_url(item, 'video.mp4') }}" type="video/mp4"></video>
+            {% else %}
+                <img class="moderation-item__media" src="{{ media_url(item, 'image/thumb') }}" alt="{{ item.caption ?: 'Foto' }}" loading="lazy">
+            {% endif %}
+        {% else %}
+            <p class="detail__placeholder">{{ item.processingStatus.value == 'failed' ? 'Verarbeitung fehlgeschlagen' : 'Wird noch verarbeitet …' }}</p>
+        {% endif %}
+        {% if item.caption %}<p>{{ item.caption }}</p>{% endif %}
+    {% else %}
+        <blockquote class="guestbook__text">{{ item.message|nl2br }}</blockquote>
+    {% endif %}
+    <p class="muted">{{ item.uploaderGuest.displayName ?? 'Gast' }} · {{ item.createdAt|ago }} · {{ item.visibility.value == 'couple' ? 'nur Brautpaar' : 'alle Gäste' }}</p>
+    <div class="button-row">
+        {% for action, label in actions %}
+            <form method="post" action="{{ path('admin_moderation_action', {slug: wedding.slug, kind: kind, id: item.id, action: action}) }}"{% if action == 'loeschen' %} data-turbo-confirm="Endgültig löschen?"{% endif %}>
+                {{ include('admin/_csrf.html.twig') }}
+                <button class="button {{ action == 'freigeben' or action == 'gesichtet' ? 'button--primary' : 'button--secondary' }}{{ action == 'loeschen' ? ' button--danger' : '' }}" type="submit">{{ label }}</button>
+            </form>
+        {% endfor %}
+    </div>
+</li>

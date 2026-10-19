@@ -1,0 +1,29 @@
+{% import 'components/ornament.html.twig' as deco %}
+{% import 'components/icon.html.twig' as ui %}
+{#
+  Kleines Porträt-Medaillon neben der Begrüßung. Solange gezeichnet wird, lädt sich der Rahmen selbst neu.
+  Erwartet: guest, wedding, portraitOffered.
+#}
+<turbo-frame id="portrait" target="_top" class="portrait-slot">
+    {% set status = guest.portraitStatus ? guest.portraitStatus.value : null %}
+    {% set link = path('guest_portrait', {slug: wedding.slug}) %}
+    <div class="portrait{{ status ? ' portrait--' ~ status : '' }}"
+         {% if status == 'pending' %}data-controller="portrait-poll" data-portrait-poll-url-value="{{ path('guest_portrait_frame', {slug: wedding.slug}) }}"{% endif %}>
+        <a class="portrait__wreath" href="{{ link }}" aria-label="{{ status == 'ready' ? 'Mein Porträt' : 'Porträt zeichnen lassen' }}">
+            {{ deco.garland(92) }}
+            {% if status == 'ready' %}
+                {{ include('guest/app/_portrait_art.html.twig') }}
+            {% else %}
+                {{ deco.duo(58) }}
+                {% if status != 'pending' and portraitOffered %}<span class="portrait__badge">{{ ui.icon('camera', 13) }}</span>{% endif %}
+            {% endif %}
+        </a>
+        {% if status == 'pending' %}
+            <p class="portrait__note" role="status"><span class="portrait__pen" aria-hidden="true"></span> wird gezeichnet</p>
+        {% elseif status == 'failed' %}
+            <p class="portrait__note"><a href="{{ link }}">Nochmal versuchen</a></p>
+        {% elseif status is null and portraitOffered %}
+            <p class="portrait__note"><a href="{{ link }}">Lass dich zeichnen</a></p>
+        {% endif %}
+    </div>
+</turbo-frame>

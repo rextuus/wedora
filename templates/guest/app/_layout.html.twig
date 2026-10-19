@@ -1,0 +1,47 @@
+{% extends 'base.html.twig' %}
+{% import 'components/icon.html.twig' as ui %}
+
+{#
+  Gast-App: Kopfzeile mit Brautpaar + Bereich, Inhalt, Navigationsleiste unten (Daumenzone).
+  Erwartet: wedding, guest, section (Name des aktiven Bereichs).
+#}
+{% block body %}
+    {% set slug = wedding.slug %}
+    <a class="skip-link" href="#main">Zum Inhalt springen</a>
+    <header class="app-header">
+        <a class="app-header__brand" href="{{ path('guest_home', {slug: slug}) }}">
+            <span class="app-header__title">{{ wedding.title }}</span>
+            <span class="app-header__section">{% block section %}{% endblock %}</span>
+        </a>
+        <a class="app-header__avatar{{ guest.hasPortrait() ? ' app-header__avatar--portrait' : '' }}" href="{{ path('guest_album', {slug: slug}) }}" aria-label="Mein Album">
+            {%- if guest.hasPortrait() %}{{ include('guest/app/_portrait_art.html.twig') }}{% else %}{{ guest.displayName|first|upper }}{% endif -%}
+        </a>
+    </header>
+
+    <main class="{% block main_class %}app-main{% endblock %}" id="main">
+        {% for type, messages in app.flashes %}
+            {% for message in messages %}<p class="notice notice--{{ type }}" role="status">{{ message }}</p>{% endfor %}
+        {% endfor %}
+        {% block content %}{% endblock %}
+    </main>
+
+    {% set nav = [
+        {route: 'guest_home', label: 'Start', icon: 'home', key: 'home'},
+        {route: 'guest_gallery', label: 'Galerie', icon: 'photos', key: 'gallery'},
+    ] %}
+    {% if wedding.module(enum('App\\Wedding\\ModuleType').Challenges).enabled %}
+        {% set nav = nav|merge([{route: 'guest_challenges', label: 'Aufgaben', icon: 'flag', key: 'challenges'}]) %}
+    {% endif %}
+    {% if wedding.module(enum('App\\Wedding\\ModuleType').Guestbook).enabled %}
+        {% set nav = nav|merge([{route: 'guest_guestbook', label: 'Gästebuch', icon: 'book', key: 'guestbook'}]) %}
+    {% endif %}
+    {% set nav = nav|merge([{route: 'guest_album', label: 'Mein Album', icon: 'album', key: 'album'}]) %}
+
+    <nav class="bottom-nav" aria-label="Hauptnavigation">
+        {% for item in nav %}
+            <a href="{{ path(item.route, {slug: slug}) }}" class="bottom-nav__item"{% if active|default('') == item.key %} aria-current="page"{% endif %}>
+                {{ ui.icon(item.icon) }}<span>{{ item.label }}</span>
+            </a>
+        {% endfor %}
+    </nav>
+{% endblock %}

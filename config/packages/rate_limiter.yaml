@@ -1,0 +1,13 @@
+framework:
+    rate_limiter:
+        # Schutz des gemeinsamen Hochzeitspassworts gegen Raten (pro Hochzeit und IP).
+        wedding_password:
+            policy: sliding_window
+            limit: 10
+            interval: '15 minutes'
+
+        # KI-Porträts kosten Geld beim Anbieter: wenige Versuche pro Gast und Tag.
+        guest_portrait:
+            policy: fixed_window
+            limit: 5
+            interval: '1 day'

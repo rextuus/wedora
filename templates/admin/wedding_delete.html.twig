@@ -1,0 +1,14 @@
+{% extends 'admin/_layout.html.twig' %}
+
+{% block content %}
+    <section class="card card--danger">
+        <h2 class="headline-md">„{{ wedding.title }}“ endgültig löschen</h2>
+        <p>Gelöscht werden alle Fotos und Videos (Originale und Varianten), Gästebucheinträge, Aufgaben, Gäste, Einladungen, Exporte und laufende Uploads. Das lässt sich nicht rückgängig machen.</p>
+        <p class="muted">Tipp: Vorher einen Export erstellen und herunterladen.</p>
+        <form method="post" class="stack">
+            {{ include('admin/_csrf.html.twig') }}
+            <div class="field"><label for="confirm">Zur Bestätigung das Kürzel <code>{{ wedding.slug }}</code> eingeben</label><input id="confirm" name="confirm" autocomplete="off" required></div>
+            <button class="button button--secondary button--danger" type="submit">Endgültig löschen</button>
+        </form>
+    </section>
+{% endblock %}

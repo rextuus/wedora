@@ -1,0 +1,108 @@
+# Wedora – lokale Entwicklungsumgebung.
+# Secrets kommen ausschließlich aus der nicht versionierten Datei .env.docker.local
+# (Vorlage: .env.docker.dist, Erzeugung: `make secrets`).
+name: wedora
+
+x-app: &app
+  build:
+    context: .
+    dockerfile: docker/php/Dockerfile
+    target: dev
+    args:
+      UID: ${UID:-1000}
+      GID: ${GID:-1000}
+  image: wedora-app:dev
+  volumes:
+    - ./:/srv/app:rw
+    - media_data:/srv/media:rw
+  environment:
+    DATABASE_URL: mysql://${MYSQL_USER:-app}:${MYSQL_PASSWORD:?Bitte make secrets ausführen}@database:3306/${MYSQL_DATABASE:-app}?serverVersion=8.4.11&charset=utf8mb4
+    MEDIA_ROOT: /srv/media
+    MEDIA_TOKEN_SECRET: ${MEDIA_TOKEN_SECRET:?Bitte make secrets ausführen}
+    IMGPROXY_KEY: ${IMGPROXY_KEY:?Bitte make secrets ausführen}
+    IMGPROXY_SALT: ${IMGPROXY_SALT:?Bitte make secrets ausführen}
+  depends_on:
+    database:
+      condition: service_healthy
+
+services:
+  app:
+    <<: *app
+    healthcheck:
+      test: ["CMD-SHELL", "SCRIPT_NAME=/fpm-ping SCRIPT_FILENAME=/fpm-ping REQUEST_METHOD=GET cgi-fcgi -bind -connect 127.0.0.1:9000 || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  worker:
+    <<: *app
+    command: ["php", "bin/console", "messenger:consume", "async", "--time-limit=3600", "--memory-limit=192M", "-vv"]
+    restart: unless-stopped
+    # Videotranskodierung ist CPU-intensiv; Grenzen verhindern, dass die Web-Auslieferung leidet.
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 1g
+
+  web:
+    image: caddy:2.11.7-alpine
+    environment:
+      SERVER_NAME: ${SERVER_NAME:-:80}
+    volumes:
+      - ./public:/srv/app/public:ro
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - media_data:/srv/media:ro
+      - caddy_data:/data
+    ports:
+      - "127.0.0.1:${WEB_PORT:-8180}:80"
+    depends_on:
+      - app
+      - imgproxy
+
+  database:
+    image: mysql:8.4.11
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-app}
+      MYSQL_USER: ${MYSQL_USER:-app}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Bitte make secrets ausführen}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Bitte make secrets ausführen}
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    volumes:
+      - database_data:/var/lib/mysql:rw
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+
+  imgproxy:
+    # Nur intern erreichbar; Bilder werden ausschließlich über Symfony + Caddy ausgeliefert.
+    image: ghcr.io/imgproxy/imgproxy:v4.0.18
+    # Medienverzeichnisse sind 0750; imgproxy liest mit der Gruppe der App (nur lesend gemountet).
+    user: "999:${GID:-1000}"
+    environment:
+      IMGPROXY_KEY: ${IMGPROXY_KEY:?Bitte make secrets ausführen}
+      IMGPROXY_SALT: ${IMGPROXY_SALT:?Bitte make secrets ausführen}
+      IMGPROXY_LOCAL_FILESYSTEM_ROOT: /media
+      # Nur Dateien aus dem Medienspeicher, keine HTTP- oder sonstigen Quellen.
+      IMGPROXY_ALLOWED_SOURCES: local:///
+      IMGPROXY_MAX_SRC_RESOLUTION: "50"
+      IMGPROXY_MAX_SRC_FILE_SIZE: "52428800"
+      IMGPROXY_WORKERS: "2"
+      IMGPROXY_STRIP_METADATA: "true"
+      IMGPROXY_AUTO_ROTATE: "true"
+    volumes:
+      - media_data:/media:ro
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512m
+
+volumes:
+  database_data:
+  media_data:
+  caddy_data:

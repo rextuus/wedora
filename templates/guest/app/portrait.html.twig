@@ -1,0 +1,56 @@
+{% extends 'guest/app/_layout.html.twig' %}
+{% import 'components/icon.html.twig' as ui %}
+{% import 'components/ornament.html.twig' as deco %}
+
+{% block title %}Dein Porträt – {{ wedding.title }}{% endblock %}
+{% block section %}Porträt{% endblock %}
+
+{% block content %}
+    <header class="section-header portrait-header">
+        <p class="overline">{{ welcome ? 'Willkommen, ' ~ guest.displayName : 'Dein Porträt' }}</p>
+        <h1 class="headline-lg">Lass dich <em>zeichnen</em></h1>
+        <p class="lead">Mach ein Selfie – daraus entsteht eine feine Linienzeichnung im Stil dieser Hochzeit. Sie erscheint nur bei dir oben auf der Startseite.</p>
+        {{ deco.sprig(110) }}
+    </header>
+
+    {% if error %}<p class="notice notice--error" role="alert">{{ error }}</p>{% endif %}
+
+    {% if guest.hasPortrait() %}
+        <section class="card portrait-card" aria-label="Dein aktuelles Porträt">
+            <span class="portrait__wreath portrait__wreath--large">{{ deco.garland(250) }}{{ include('guest/app/_portrait_art.html.twig') }}</span>
+            <div class="button-row">
+                <a class="button button--secondary" href="{{ path('guest_portrait_image', {slug: wedding.slug, v: guest.portraitUpdatedAt|date('U'), download: 1}) }}" download>{{ ui.icon('download', 18) }} Herunterladen</a>
+                <form method="post" action="{{ path('guest_portrait_delete', {slug: wedding.slug}) }}" data-turbo-confirm="Porträt löschen?">
+                    <input type="hidden" name="_token" value="{{ csrf_token('guest-action') }}">
+                    <button class="button button--secondary" type="submit">{{ ui.icon('trash', 18) }} Löschen</button>
+                </form>
+            </div>
+        </section>
+    {% endif %}
+
+    {% if guest.portraitStatus and guest.portraitStatus.value == 'pending' %}
+        <p class="notice" role="status">Dein Porträt wird gerade gezeichnet. Das dauert meist unter einer Minute.</p>
+    {% else %}
+        <form class="card stack" method="post" action="{{ path('guest_portrait_create', {slug: wedding.slug}) }}" enctype="multipart/form-data"
+              data-controller="selfie" data-action="submit->selfie#prepare">
+            <input type="hidden" name="_token" value="{{ csrf_token('guest-action') }}">
+            <input type="hidden" name="welcome" value="{{ welcome ? 1 : 0 }}">
+            <h2 class="headline-sm">{{ guest.hasPortrait() ? 'Neues Porträt' : 'Dein Selfie' }}</h2>
+
+            <label class="selfie-pick">
+                <input class="visually-hidden" type="file" name="selfie" accept="image/*" capture="user" data-selfie-target="input" data-action="change->selfie#preview">
+                <img class="selfie-pick__preview" alt="" hidden data-selfie-target="preview">
+                <span class="selfie-pick__empty" data-selfie-target="placeholder">{{ ui.icon('camera', 28) }} Selfie aufnehmen</span>
+            </label>
+
+            <label class="consent">
+                <input type="checkbox" name="consent" value="1" required>
+                <span>Ich bin einverstanden, dass mein Foto zum Zeichnen an Google (Gemini) übertragen wird. Das Foto wird danach sofort gelöscht, gespeichert bleibt nur die Zeichnung – und die kann ich jederzeit löschen.</span>
+            </label>
+
+            <button class="button button--primary" type="submit" data-selfie-target="submit">{{ ui.icon('check', 18) }} Zeichnen lassen</button>
+        </form>
+    {% endif %}
+
+    <p class="spaced"><a class="text-link" href="{{ path('guest_home', {slug: wedding.slug}) }}">{{ welcome ? 'Überspringen' : 'Zurück zur Startseite' }} {{ ui.icon('next', 14) }}</a></p>
+{% endblock %}

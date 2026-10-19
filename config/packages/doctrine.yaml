@@ -1,0 +1,80 @@
+doctrine:
+    dbal:
+        url: '%env(resolve:DATABASE_URL)%'
+
+        # IMPORTANT: You MUST configure your server version,
+        # either here or in the DATABASE_URL env var (see .env file)
+        #server_version: '16'
+
+        profiling_collect_backtrace: '%kernel.debug%'
+    orm:
+        validate_xml_mapping: true
+        naming_strategy: doctrine.orm.naming_strategy.underscore
+        auto_mapping: true
+        mappings:
+            Wedding:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Wedding/Entity'
+                prefix: 'App\Wedding\Entity'
+                alias: Wedding
+            Guest:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Guest/Entity'
+                prefix: 'App\Guest\Entity'
+                alias: Guest
+            Account:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Account/Entity'
+                prefix: 'App\Account\Entity'
+                alias: Account
+            Challenge:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Challenge/Entity'
+                prefix: 'App\Challenge\Entity'
+                alias: Challenge
+            Social:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Social/Entity'
+                prefix: 'App\Social\Entity'
+                alias: Social
+            Guestbook:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Guestbook/Entity'
+                prefix: 'App\Guestbook\Entity'
+                alias: Guestbook
+            Media:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Media/Entity'
+                prefix: 'App\Media\Entity'
+                alias: Media
+
+when@test:
+    doctrine:
+        dbal:
+            # "TEST_TOKEN" is typically set by ParaTest
+            dbname_suffix: '_test%env(default::TEST_TOKEN)%'
+
+when@prod:
+    doctrine:
+        orm:
+            query_cache_driver:
+                type: pool
+                pool: doctrine.system_cache_pool
+            result_cache_driver:
+                type: pool
+                pool: doctrine.result_cache_pool
+
+    framework:
+        cache:
+            pools:
+                doctrine.result_cache_pool:
+                    adapter: cache.app
+                doctrine.system_cache_pool:
+                    adapter: cache.system

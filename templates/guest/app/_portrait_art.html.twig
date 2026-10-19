@@ -1,0 +1,3 @@
+{# Porträt als Maske in der Akzentfarbe. Erwartet: guest, wedding. #}
+<span class="portrait-art" role="img" aria-label="Gezeichnetes Porträt von {{ guest.displayName }}"
+      style="--art: url('{{ path('guest_portrait_image', {slug: wedding.slug, v: guest.portraitUpdatedAt|date('U')}) }}')"></span>

@@ -1,0 +1,51 @@
+{% extends 'guest/app/_layout.html.twig' %}
+{% import 'components/icon.html.twig' as ui %}
+{% import 'components/ornament.html.twig' as deco %}
+
+{% block title %}Aufgaben – {{ wedding.title }}{% endblock %}
+{% block section %}Aufgaben{% endblock %}
+
+{% block content %}
+    <header class="section-header">
+        <p class="overline">{{ completed|length }} von {{ challenges|length }} erledigt</p>
+        <h1 class="headline-lg">Foto-<em>Aufgaben</em></h1>
+        {{ deco.sprig(110) }}
+    </header>
+
+    {% if challenges is empty %}
+        <div class="empty-state card">{{ deco.motif('camera', 72) }}<p class="lead">Das Brautpaar hat noch keine Aufgaben angelegt.</p></div>
+    {% endif %}
+
+    <ul class="challenge-list">
+        {% for c in challenges %}
+            {% set cid = c.id.toRfc4122 %}
+            {% set done = completed[cid] ?? false %}
+            <li class="challenge-item card{{ done ? ' is-done' : '' }}">
+                <span class="challenge-item__motif">{{ deco.motif(challenge_motif(c.title), 64) }}</span>
+                <div class="card__head">
+                    <h2><a href="{{ path('guest_challenge', {slug: wedding.slug, id: cid}) }}">{{ c.title }}</a></h2>
+                    {% if done %}<span class="status status--done">{{ ui.icon('check', 14) }} Erledigt</span>
+                    {% elseif not c.hasStartedAt(now) %}<span class="status">{{ ui.icon('lock', 14) }} Ab {{ c.startsAt|date('H:i') }} Uhr</span>
+                    {% elseif c.hasEndedAt(now) %}<span class="status">Beendet</span>
+                    {% else %}<span class="status status--pending">Offen</span>{% endif %}
+                </div>
+                {% if c.description %}<p>{{ c.description }}</p>{% endif %}
+                <p class="muted">{{ c.mediaType.label }}{% if wedding.areChallengePointsEnabled() and c.points %} · {{ c.points }} Punkte{% endif %}{% if participants[cid] ?? 0 %} · {{ participants[cid] }} {{ participants[cid] == 1 ? 'Gast hat' : 'Gäste haben' }} mitgemacht{% endif %}</p>
+                {% if c.acceptsAt(now) %}
+                    <a class="button {{ done ? 'button--secondary' : 'button--primary' }}" href="{{ path('guest_upload', {slug: wedding.slug, aufgabe: cid}) }}">{{ done ? 'Noch einen Beitrag' : 'Mitmachen' }}</a>
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+
+    {% if leaderboard is not empty %}
+        <section aria-labelledby="ranking-title">
+            <h2 id="ranking-title" class="overline">Rangliste</h2>
+            <ol class="ranking">
+                {% for row in leaderboard %}
+                    <li{% if row.guestId == guest.id.toRfc4122 %} class="is-me"{% endif %}><span>{{ row.name }}</span><strong>{{ row.points }}</strong></li>
+                {% endfor %}
+            </ol>
+        </section>
+    {% endif %}
+{% endblock %}

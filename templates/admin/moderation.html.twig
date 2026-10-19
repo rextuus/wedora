@@ -1,0 +1,48 @@
+{% extends 'admin/_layout.html.twig' %}
+
+{% block content %}
+    <p class="muted">Moderationsmodus: <strong>{{ {'immediate': 'sofort veröffentlichen', 'approval': 'erst nach Freigabe', 'post_moderation': 'sofort, nachträglich prüfen'}[wedding.moderationMode.value] }}</strong>. Beiträge „nur für mich“ sind der Moderation entzogen.</p>
+
+    <section aria-labelledby="pending-title">
+        <h2 id="pending-title" class="headline-md">Wartet auf Freigabe ({{ pending|length }})</h2>
+        {% if pending is empty %}<p class="muted">Nichts zu tun.</p>{% endif %}
+        <ul class="moderation-list">
+            {% for item in pending %}
+                {{ include('admin/_contribution.html.twig', {actions: {freigeben: 'Freigeben', ablehnen: 'Ablehnen', loeschen: 'Löschen'}}) }}
+            {% endfor %}
+        </ul>
+    </section>
+
+    {% if wedding.moderationMode.value == 'post_moderation' %}
+        <section aria-labelledby="unreviewed-title">
+            <h2 id="unreviewed-title" class="headline-md">Veröffentlicht, noch nicht gesichtet ({{ unreviewed|length }})</h2>
+            {% if unreviewed is empty %}<p class="muted">Alles gesichtet.</p>{% endif %}
+            <ul class="moderation-list">
+                {% for item in unreviewed %}
+                    {{ include('admin/_contribution.html.twig', {actions: {gesichtet: 'In Ordnung', ablehnen: 'Ausblenden', loeschen: 'Löschen'}}) }}
+                {% endfor %}
+            </ul>
+        </section>
+    {% endif %}
+
+    <section aria-labelledby="reports-title">
+        <h2 id="reports-title" class="headline-md">Meldungen ({{ reports|length }})</h2>
+        {% if reports is empty %}<p class="muted">Keine offenen Meldungen.</p>{% endif %}
+        <ul class="moderation-list">
+            {% for report in reports %}
+                {% set item = report.media %}
+                <li class="card moderation-item">
+                    <p><span class="status status--error">{{ report.reason.label }}</span> <span class="muted">gemeldet von {{ report.reporter.displayName ?? 'einem Gast' }}, {{ report.createdAt|ago }}</span></p>
+                    {% if report.note %}<p>„{{ report.note }}“</p>{% endif %}
+                    {% if item.ready %}<img class="moderation-item__media" src="{{ media_url(item, 'image/thumb') }}" alt="{{ item.caption ?: 'Gemeldeter Beitrag' }}" loading="lazy">{% endif %}
+                    <p class="muted">Von {{ item.uploaderGuest.displayName ?? 'Gast' }} · {{ item.createdAt|ago }}</p>
+                    <div class="button-row">
+                        <form method="post" action="{{ path('admin_report_resolve', {slug: wedding.slug, id: report.id}) }}">{{ include('admin/_csrf.html.twig') }}<button class="button button--secondary" type="submit">In Ordnung, bleibt sichtbar</button></form>
+                        <form method="post" action="{{ path('admin_moderation_action', {slug: wedding.slug, kind: 'media', id: item.id, action: 'ablehnen'}) }}">{{ include('admin/_csrf.html.twig') }}<button class="button button--primary" type="submit">Ausblenden</button></form>
+                        <form method="post" action="{{ path('admin_moderation_action', {slug: wedding.slug, kind: 'media', id: item.id, action: 'loeschen'}) }}" data-turbo-confirm="Endgültig löschen?">{{ include('admin/_csrf.html.twig') }}<button class="button button--secondary button--danger" type="submit">Löschen</button></form>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    </section>
+{% endblock %}

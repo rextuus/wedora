@@ -1,0 +1,44 @@
+{% extends 'base.html.twig' %}
+{% import 'components/icon.html.twig' as ui %}
+
+{% block title %}Verwaltung – Wedora{% endblock %}
+
+{% block body %}
+    <a class="skip-link" href="#main">Zum Inhalt springen</a>
+    <header class="admin-header">
+        <a class="admin-header__brand" href="{{ path('app_admin') }}"><span class="app-header__title">Wedora</span><span class="app-header__section">Verwaltung</span></a>
+        <div class="admin-header__user">
+            <span class="muted">{{ user.displayName }}{% if user.platformAdmin %} · Plattform{% endif %}</span>
+            <a class="text-link" href="{{ path('app_logout') }}">Abmelden</a>
+        </div>
+    </header>
+
+    {% if wedding %}
+        {% set perms = permissions|default({}) %}
+        {% set tabs = [{route: 'admin_wedding', label: 'Übersicht', key: 'overview', show: true}] %}
+        {% set tabs = tabs|merge([
+            {route: 'admin_moderation', label: 'Moderation', key: 'moderation', show: is_granted('WEDDING_MODERATE', wedding)},
+            {route: 'admin_access', label: 'Zugang & Gäste', key: 'access', show: is_granted('WEDDING_MANAGE_ACCESS', wedding)},
+            {route: 'admin_challenges', label: 'Aufgaben', key: 'challenges', show: is_granted('WEDDING_CONFIGURE', wedding)},
+            {route: 'admin_settings', label: 'Einstellungen', key: 'settings', show: is_granted('WEDDING_CONFIGURE', wedding)},
+            {route: 'admin_export', label: 'Export', key: 'export', show: is_granted('WEDDING_EXPORT', wedding)},
+            {route: 'admin_team', label: 'Team', key: 'team', show: is_granted('ROLE_PLATFORM_ADMIN')},
+        ]) %}
+        <div class="admin-wedding">
+            <p class="overline"><a href="{{ path('app_admin') }}">Alle Hochzeiten</a></p>
+            <h1 class="headline-lg">{{ wedding.title }}{% if not wedding.active %} <span class="status">Archiviert</span>{% endif %}</h1>
+        </div>
+        <nav class="admin-tabs chips" aria-label="Bereiche">
+            {% for tab in tabs|filter(t => t.show) %}
+                <a class="chip chip--filter" href="{{ path(tab.route, {slug: wedding.slug}) }}"{% if active == tab.key %} aria-current="page"{% endif %}>{{ tab.label }}</a>
+            {% endfor %}
+        </nav>
+    {% endif %}
+
+    <main class="admin-main" id="main">
+        {% for type, messages in app.flashes(['success', 'error']) %}
+            {% for message in messages %}<p class="notice notice--{{ type }}" role="status">{{ message }}</p>{% endfor %}
+        {% endfor %}
+        {% block content %}{% endblock %}
+    </main>
+{% endblock %}

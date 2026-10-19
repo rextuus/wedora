@@ -1,0 +1,29 @@
+{% extends 'guest/_layout.html.twig' %}
+
+{% block title %}Anmelden – Wedora{% endblock %}
+
+{% block content %}
+    <header class="page-header">
+        <h1 class="display">Wedora</h1>
+        <p class="tagline">Anmeldung für die Hochzeitsverwaltung</p>
+    </header>
+
+    <section class="card" aria-labelledby="login-title">
+        <h2 id="login-title" class="headline">Anmelden</h2>
+        {% if error %}
+            <p class="alert" role="alert">{{ error.messageKey|trans(error.messageData, 'security') }}</p>
+        {% endif %}
+        <form method="post" class="stack" novalidate>
+            <div class="field">
+                <label for="username">E-Mail</label>
+                <input type="email" id="username" name="_username" value="{{ last_username }}" autocomplete="email" required autofocus>
+            </div>
+            <div class="field">
+                <label for="password">Passwort</label>
+                <input type="password" id="password" name="_password" autocomplete="current-password" required>
+            </div>
+            <input type="hidden" name="_csrf_token" data-controller="csrf-protection" value="{{ csrf_token('authenticate') }}">
+            <button type="submit" class="button button--primary button--block">Anmelden</button>
+        </form>
+    </section>
+{% endblock %}

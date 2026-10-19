@@ -1,0 +1,374 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests\Functional\App;
+
+use App\Challenge\ChallengeMediaType;
+use App\Challenge\Entity\Challenge;
+use App\Gallery\GalleryQuery;
+use App\Guestbook\Entity\GuestbookEntry;
+use App\Guestbook\GuestbookFeed;
+use App\Media\Entity\Media;
+use App\Media\MediaType;
+use App\Media\Repository\MediaRepository;
+use App\Media\Visibility;
+use App\Moderation\ModerationQueue;
+use App\Security\MediaAccessPolicy;
+use App\Security\Viewer;
+use App\Social\Repository\MediaLikeRepository;
+use App\Tests\Functional\WebTestCase;
+use App\Wedding\Entity\Wedding;
+use App\Wedding\ModerationMode;
+use App\Wedding\ModuleType;
+use DateTimeImmutable;
+use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Uid\Uuid;
+
+final class GuestAppTest extends WebTestCase
+{
+    protected function tearDown(): void
+    {
+        $root = $_SERVER['MEDIA_ROOT'] ?? null;
+        new Filesystem()->remove(is_string($root) ? $root : '/tmp/wedora-test-media');
+        parent::tearDown();
+    }
+
+    public function testGalleryListsOnlySharedItemsAndNeverMoreThanPolicyAllows(): void
+    {
+        $wedding = $this->fixtures->wedding();
+        [$me, $secret] = $this->fixtures->guest($wedding, 'Ich');
+        [$other] = $this->fixtures->guest($wedding, 'Andere');
+        [$foreign] = $this->fixtures->guest($this->fixtures->wedding(), 'Fremd');
+
+        $shared = $this->fixtures->guestMedia($other);
+        $mineShared = $this->fixtures->guestMedia($me);
+        $couple = $this->fixtures->guestMedia($other, Visibility::Couple);
+        $private = $this->fixtures->guestMedia($other, Visibility::UploaderOnly);
+        $processing = $this->fixtures->guestMedia($other, ready: false);
+        $pending = $this->fixtures->guestMedia($other);
+        self::fresh($pending)->reject(new DateTimeImmutable());
+        $deleted = $this->fixtures->guestMedia($other);
+        self::fresh($deleted)->markDeleted(new DateTimeImmutable());
+        $this->fixtures->guestMedia($foreign);
+        $this->fixtures->flush();
+
+        $listed = self::service(GalleryQuery::class)->shared(self::fresh($me));
+        $ids = array_map(static fn(Media $m): string => $m->getId()->toRfc4122(), $listed);
+
+        self::assertEqualsCanonicalizing([$shared->getId()->toRfc4122(), $mineShared->getId()->toRfc4122()], $ids);
+
+        // Konsistenz: jede Liste ist eine Teilmenge dessen, was die Rechteprüfung erlaubt.
+        $viewer = Viewer::guest($me->getId(), $wedding->getId());
+        $policy = new MediaAccessPolicy();
+        foreach ([...$listed, ...self::service(GalleryQuery::class)->mine(self::fresh($me))] as $media) {
+            self::assertTrue($policy->canView($viewer, $media), $media->getId()->toRfc4122());
+        }
+
+        $this->actAsGuest($me, $secret);
+        $this->client->request('GET', "/h/{$wedding->getSlug()}/galerie");
+        self::assertResponseIsSuccessful();
+        self::assertCount(2, $this->client->getCrawler()->filter('.magazine .tile'));
+
+        foreach ([$couple, $private, $processing, $pending, $deleted] as $hidden) {
+            $this->client->request('GET', "/h/{$wedding->getSlug()}/m/{$hidden->getId()->toRfc4122()}");
+            self::assertResponseStatusCodeSame(404);
+        }
+    }
+
+    public function testGalleryFilterAndPagination(): void
+    {
+        $wedding = $this->fixtures->wedding();
+        [$guest, $secret] = $this->fixtures->guest($wedding);
+        for ($i = 0; $i < (GalleryQuery::PAGE_SIZE + 6); ++$i) {
+            $this->fixtures->guestMedia($guest);
+        }
+        $this->fixtures->guestMedia($guest, type: MediaType::Video);
+        $this->actAsGuest($guest, $secret);
+
+        $this->client->request('GET', "/h/{$wedding->getSlug()}/galerie?filter=videos");
+        self::assertCount(1, $this->client->getCrawler()->filter('.magazine .tile'));
+
+        $crawler = $this->client->request('GET', "/h/{$wedding->getSlug()}/galerie");
+        self::assertCount(GalleryQuery::PAGE_SIZE, $crawler->filter('.magazine .tile'));
+        $more = $crawler->filter('turbo-frame[loading="lazy"]')->attr('src');
+        self::assertNotNull($more);
+
+        $page = $this->client->request('GET', $more);
+        self::assertCount(7, $page->filter('.magazine .tile'), 'restliche 6 Fotos + 1 Video');
+    }
+
+    public function testLikeToggleRequiresTokenAndVisibility(): void
+    {
+        $wedding = $this->fixtures->wedding();
+        [$guest, $secret] = $this->fixtures->guest($wedding);
+        [$other] = $this->fixtures->guest($wedding, 'Andere');
+        $media = $this->fixtures->guestMedia($other);
+        $hidden = $this->fixtures->guestMedia($other, Visibility::UploaderOnly);
+        $this->actAsGuest($guest, $secret);
+        $token = $this->guestToken($wedding);
+        $url = "/h/{$wedding->getSlug()}/m/{$media->getId()->toRfc4122()}/like";
+
+        // @mago-expect lint:no-literal-password
+        $this->client->request('POST', $url, ['_token' => 'falsch']);
+        self::assertResponseStatusCodeSame(403);
+
+        $this->client->request('POST', $url, ['_token' => $token]);
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.like-button', '1');
+        self::assertSame(1, self::service(MediaLikeRepository::class)->count(['media' => self::fresh($media)]));
+
+        $this->client->request('POST', $url, ['_token' => $token]);
+        self::assertSelectorTextContains('.like-button', '0');
+
+        $this->client->request('POST', "/h/{$wedding->getSlug()}/m/{$hidden->getId()->toRfc4122()}/like", [
+            '_token' => $token,
+        ]);
+        self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testReportAppearsInModerationButOwnMediaCannotBeReported(): void
+    {
+        $wedding = $this->fixtures->wedding();
+        [$guest, $secret] = $this->fixtures->guest($wedding);
+        [$other] = $this->fixtures->guest($wedding, 'Andere');
+        $media = $this->fixtures->guestMedia($other);
+        $own = $this->fixtures->guestMedia($guest);
+        $this->actAsGuest($guest, $secret);
+        $token = $this->guestToken($wedding);
+
+        foreach ([$media, $media, $own] as $item) {
+            $this->client->request('POST', "/h/{$wedding->getSlug()}/m/{$item->getId()->toRfc4122()}/melden", [
+                '_token' => $token,
+                'reason' => 'privacy',
+                'note' => 'Bitte entfernen',
+            ]);
+            self::assertResponseRedirects();
+        }
+
+        $reports = self::service(ModerationQueue::class)->openReports(self::fresh($wedding));
+        self::assertCount(1, $reports, 'doppelte Meldung zählt einmal, eigene gar nicht');
+        self::assertSame('privacy', $reports[0]->getReason()->value);
+        self::assertSame('Bitte entfernen', $reports[0]->getNote());
+    }
+
+    public function testAlbumShowsOwnItemsWithStatus(): void
+    {
+        $wedding = $this->fixtures->wedding(ModerationMode::Approval);
+        [$guest, $secret] = $this->fixtures->guest($wedding);
+        $this->fixtures->guestMedia($guest);
+        $this->fixtures->guestMedia($guest, Visibility::UploaderOnly);
+        $this->actAsGuest($guest, $secret);
+
+        $crawler = $this->client->request('GET', "/h/{$wedding->getSlug()}/album");
+
+        self::assertResponseIsSuccessful();
+        self::assertCount(2, $crawler->filter('.grid .tile'));
+        $flags = $crawler->filter('.tile__flag')->each(static fn($node): string => trim($node->text()));
+        self::assertEqualsCanonicalizing(['Wartet', 'Privat'], $flags, 'private Beiträge brauchen keine Freigabe');
+    }
+
+    public function testGuestbookVisibilityModerationAndDeletion(): void
+    {
+        $wedding = $this->fixtures->wedding(ModerationMode::Approval);
+        [$author, $authorSecret] = $this->fixtures->guest($wedding, 'Autorin');
+        [$reader, $readerSecret] = $this->fixtures->guest($wedding, 'Leser');
+        $this->actAsGuest($author, $authorSecret);
+        $token = $this->guestToken($wedding);
+
+        $this->client->request('POST', "/h/{$wedding->getSlug()}/gaestebuch", [
+            '_token' => $token,
+            'message' => 'Alles Liebe!',
+            'visibility' => 'all_guests',
+        ]);
+        self::assertResponseRedirects();
+        $this->client->request('POST', "/h/{$wedding->getSlug()}/gaestebuch", [
+            '_token' => $token,
+            'message' => 'Nur für euch',
+            'visibility' => 'couple',
+        ]);
+        $this->client->request('POST', "/h/{$wedding->getSlug()}/gaestebuch", [
+            '_token' => $token,
+            'message' => str_repeat('x', 2001),
+        ]);
+
+        $feed = self::service(GuestbookFeed::class);
+        self::assertCount(2, $feed->forGuest(self::fresh($author)), 'Autorin sieht beide eigenen (wartend)');
+        self::assertCount(0, $feed->forGuest(self::fresh($reader)), 'Leser sieht nichts Unveröffentlichtes');
+
+        $entries = self::em()
+            ->getRepository(GuestbookEntry::class)
+            ->findBy(['author' => self::fresh($author)]);
+        foreach ($entries as $entry) {
+            $entry->approve(new DateTimeImmutable());
+        }
+        self::em()->flush();
+        $visible = $feed->forGuest(self::fresh($reader));
+        self::assertCount(1, $visible, '„Nur Brautpaar“ bleibt für Gäste verborgen');
+        self::assertInstanceOf(GuestbookEntry::class, $visible[0]);
+        self::assertSame('Alles Liebe!', $visible[0]->getMessage());
+
+        $this->client->getCookieJar()->clear();
+        $this->actAsGuest($reader, $readerSecret);
+        $this->client->request(
+            'POST',
+            "/h/{$wedding->getSlug()}/gaestebuch/{$visible[0]->getId()->toRfc4122()}/loeschen",
+            ['_token' => $this->guestToken($wedding)],
+        );
+        self::assertResponseStatusCodeSame(403, 'fremde Einträge nicht löschbar');
+    }
+
+    public function testChallengeUploadCompletesTaskAndRespectsWindowAndType(): void
+    {
+        $wedding = $this->fixtures->wedding();
+        $wedding->enableChallengePoints(true);
+        $open = $this->challenge($wedding, 'First Drink', 10);
+        $later = $this->challenge($wedding, 'Last Drink', 10);
+        self::fresh($later)->schedule(new DateTimeImmutable('+2 hours'), null);
+        $videoOnly = $this->challenge($wedding, 'Tanzfläche', 15);
+        self::fresh($videoOnly)->setMediaType(ChallengeMediaType::Video);
+        $this->fixtures->flush();
+        [$guest, $secret] = $this->fixtures->guest($wedding, 'Sophie');
+        $this->actAsGuest($guest, $secret);
+        $photo = (string) file_get_contents(dirname(__DIR__, 2) . '/Fixtures/phase0.jpg');
+
+        $crawler = $this->client->request('GET', "/h/{$wedding->getSlug()}");
+        self::assertStringContainsString('First Drink', $crawler->filter('.mission')->text());
+
+        $mediaId = $this->uploadPhoto($wedding, $photo, $open->getId()->toRfc4122());
+        $media = self::service(MediaRepository::class)->find(Uuid::fromString($mediaId));
+        self::assertNotNull($media);
+        self::assertSame(ModuleType::Challenges, $media->getModule());
+        self::assertSame('First Drink', $media->getChallenge()?->getTitle());
+
+        $this->apiStart($wedding, strlen($photo), $later->getId()->toRfc4122());
+        self::assertResponseStatusCodeSame(403, 'noch nicht gestartet');
+        $this->apiStart($wedding, strlen($photo), $videoOnly->getId()->toRfc4122());
+        self::assertResponseStatusCodeSame(422, 'falscher Medientyp');
+
+        $crawler = $this->client->request('GET', "/h/{$wedding->getSlug()}/aufgaben/{$open->getId()->toRfc4122()}");
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1', 'First Drink');
+        self::assertSelectorTextContains('.mission', 'Erledigt');
+        self::assertCount(1, $crawler->filter('.grid .tile'), 'eigener Beitrag zur Aufgabe');
+        self::assertLessThan(
+            200,
+            substr_count((string) $this->client->getResponse()->getContent(), "\n") / 10,
+            'Seite in normaler Größe',
+        );
+
+        $crawler = $this->client->request('GET', "/h/{$wedding->getSlug()}/aufgaben");
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('1 von 3 erledigt', $crawler->filter('.section-header')->text());
+        self::assertStringContainsString('Sophie', $crawler->filter('.ranking')->text());
+        self::assertStringContainsString('10', $crawler->filter('.ranking')->text());
+    }
+
+    public function testDisabledModulesAreHiddenAndUnreachable(): void
+    {
+        $wedding = $this->fixtures->wedding();
+        $wedding->module(ModuleType::Challenges)->setEnabled(false);
+        $wedding->module(ModuleType::Guestbook)->setEnabled(false);
+        $this->fixtures->flush();
+        [$guest, $secret] = $this->fixtures->guest($wedding);
+        $this->actAsGuest($guest, $secret);
+
+        $crawler = $this->client->request('GET', "/h/{$wedding->getSlug()}");
+        self::assertStringNotContainsString('Aufgaben', $crawler->filter('.bottom-nav')->text());
+        self::assertStringNotContainsString('Gästebuch', $crawler->filter('.bottom-nav')->text());
+
+        foreach (['aufgaben', 'gaestebuch'] as $page) {
+            $this->client->request('GET', "/h/{$wedding->getSlug()}/{$page}");
+            self::assertResponseStatusCodeSame(404);
+        }
+    }
+
+    public function testOnlyUploaderCanEditCaption(): void
+    {
+        $wedding = $this->fixtures->wedding();
+        [$owner, $ownerSecret] = $this->fixtures->guest($wedding, 'Owner');
+        [$other, $otherSecret] = $this->fixtures->guest($wedding, 'Andere');
+        $media = $this->fixtures->guestMedia($owner);
+        $url = "/h/{$wedding->getSlug()}/m/{$media->getId()->toRfc4122()}/beschriftung";
+
+        $this->actAsGuest($other, $otherSecret);
+        $this->client->request('POST', $url, ['_token' => $this->guestToken($wedding), 'caption' => 'Gekapert']);
+        self::assertResponseStatusCodeSame(403);
+
+        $this->client->getCookieJar()->clear();
+        $this->actAsGuest($owner, $ownerSecret);
+        $this->client->request('POST', $url, [
+            '_token' => $this->guestToken($wedding),
+            'caption' => '  Sonnenuntergang   am See ',
+        ]);
+        self::assertResponseRedirects();
+        self::assertSame('Sonnenuntergang am See', self::fresh($media)->getCaption());
+    }
+
+    private function challenge(Wedding $wedding, string $title, int $points): Challenge
+    {
+        $challenge = new Challenge(self::fresh($wedding), $title);
+        $challenge->setPoints($points);
+        self::em()->persist($challenge);
+        self::em()->flush();
+
+        return $challenge;
+    }
+
+    private function guestToken(Wedding $wedding): string
+    {
+        $crawler = $this->client->request('GET', "/h/{$wedding->getSlug()}/gaestebuch");
+        if (200 !== $this->client->getResponse()->getStatusCode()) {
+            $crawler = $this->client->request('GET', "/h/{$wedding->getSlug()}/album");
+        }
+
+        $token = $crawler->filter('input[name="_token"]')->first();
+
+        return 0 === $token->count() ? $this->tokenFromGallery($wedding) : (string) $token->attr('value');
+    }
+
+    private function tokenFromGallery(Wedding $wedding): string
+    {
+        return (string) $this->client
+            ->request('GET', "/h/{$wedding->getSlug()}/galerie")
+            ->filter('input[name="_token"]')
+            ->first()
+            ->attr('value');
+    }
+
+    private function apiStart(Wedding $wedding, int $size, ?string $challenge = null): void
+    {
+        $this->client->request(
+            'POST',
+            "/h/{$wedding->getSlug()}/api/uploads",
+            server: [
+                'HTTP_X_REQUESTED_WITH' => 'wedora',
+                'CONTENT_TYPE' => 'application/json',
+            ],
+            content: (string) json_encode(['type' => 'photo', 'size' => $size, 'challenge' => $challenge]),
+        );
+    }
+
+    private function uploadPhoto(Wedding $wedding, string $content, ?string $challenge): string
+    {
+        $this->apiStart($wedding, strlen($content), $challenge);
+        self::assertResponseStatusCodeSame(201);
+        /** @var array{id: string} $start */
+        $start = json_decode((string) $this->client->getResponse()->getContent(), true);
+        $this->client->request(
+            'PATCH',
+            "/h/{$wedding->getSlug()}/api/uploads/{$start['id']}",
+            server: [
+                'HTTP_X_REQUESTED_WITH' => 'wedora',
+                'HTTP_UPLOAD_OFFSET' => '0',
+                'CONTENT_TYPE' => 'application/offset+octet-stream',
+            ],
+            content: $content,
+        );
+        self::assertResponseStatusCodeSame(201);
+        /** @var array{media: array{id: string}} $done */
+        $done = json_decode((string) $this->client->getResponse()->getContent(), true);
+
+        return $done['media']['id'];
+    }
+}

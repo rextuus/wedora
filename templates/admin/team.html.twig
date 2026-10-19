@@ -1,0 +1,35 @@
+{% extends 'admin/_layout.html.twig' %}
+
+{% set labels = {view_content: 'Inhalte sehen', moderate: 'Moderieren', configure: 'Einstellungen & Aufgaben', manage_access: 'Zugang & Gäste', export: 'Export', manage_lifecycle: 'Archivieren'} %}
+
+{% block content %}
+    <section class="card">
+        <h2 class="headline-sm">Person hinzufügen oder Rechte ändern</h2>
+        <p class="muted">Für ein neues Konto zusätzlich Name und ein Startpasswort (mind. 12 Zeichen) angeben und es der Person sicher mitteilen.</p>
+        <form method="post" action="{{ path('admin_team_save', {slug: wedding.slug}) }}" class="stack">
+            {{ include('admin/_csrf.html.twig') }}
+            <div class="form-grid">
+                <div class="field"><label for="email">E-Mail</label><input id="email" name="email" type="email" required></div>
+                <div class="field"><label for="label">Rolle (Anzeige)</label><input id="label" name="label" maxlength="60" placeholder="z. B. Brautpaar"></div>
+                <div class="field"><label for="name">Name (neues Konto)</label><input id="name" name="name" maxlength="80"></div>
+                <div class="field"><label for="password">Startpasswort (neues Konto)</label><input id="password" name="password" type="text" minlength="12" autocomplete="new-password"></div>
+            </div>
+            <fieldset class="choice-group">
+                <legend>Rechte</legend>
+                {% for p in allPermissions %}<label class="choice"><input type="checkbox" name="permissions[]" value="{{ p.value }}"> {{ labels[p.value] }}</label>{% endfor %}
+            </fieldset>
+            <button class="button button--primary" type="submit">Speichern</button>
+        </form>
+    </section>
+
+    <ul class="row-list card">
+        {% for m in members %}
+            <li>
+                <span><strong>{{ m.user.displayName }}</strong> <span class="muted">{{ m.user.email }}{% if m.label %} · {{ m.label }}{% endif %}<br>{{ m.permissions|map(p => labels[p.value])|join(', ') ?: 'keine Rechte' }}</span></span>
+                <form method="post" action="{{ path('admin_team_remove', {slug: wedding.slug, id: m.id}) }}" data-turbo-confirm="Aus dem Team entfernen?">{{ include('admin/_csrf.html.twig') }}<button class="link-button" type="submit">Entfernen</button></form>
+            </li>
+        {% else %}
+            <li class="muted">Noch niemand im Team.</li>
+        {% endfor %}
+    </ul>
+{% endblock %}

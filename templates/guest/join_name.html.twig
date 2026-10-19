@@ -1,0 +1,24 @@
+{% extends 'guest/_layout.html.twig' %}
+{% form_theme form 'form/wedora_theme.html.twig' %}
+
+{% block title %}Dein Name – {{ wedding.title }}{% endblock %}
+
+{% import 'components/ornament.html.twig' as deco %}
+
+{% block content %}
+    <header class="page-header">
+        <span class="page-header__motif">{{ deco.motif('rings', 104) }}</span>
+        {% include 'guest/_wedding_badge.html.twig' %}
+        <h1 class="display">Willkommen!</h1>
+        <p class="tagline">Schön, dass du da bist</p>
+    </header>
+
+    <section class="card" aria-labelledby="name-title">
+        <h2 id="name-title" class="headline">Wer bist du?</h2>
+        {{ form_start(form, {attr: {class: 'stack', novalidate: 'novalidate'}}) }}
+            {{ form_row(form.displayName) }}
+            <button type="submit" class="button button--primary button--block">Los geht’s</button>
+        {{ form_end(form) }}
+        <p class="muted">Kein Konto nötig. Dein Zugang wird nur in diesem Browser gespeichert – wenn du Browserdaten löschst oder das Gerät wechselst, brauchst du den Link erneut.</p>
+    </section>
+{% endblock %}

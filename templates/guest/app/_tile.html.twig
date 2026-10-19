@@ -1,0 +1,42 @@
+{#
+  Quadratische Kachel. Normaler Link zur Detailseite; mit JavaScript öffnet sie die Vollbild-Ansicht.
+  Parameter: media, wedding, likeCounts, liked, showStatus (Album)
+#}
+{% import 'components/icon.html.twig' as ui %}
+{% set id = media.id.toRfc4122 %}
+{% set who = media.uploaderGuest.displayName ?? 'Gast' %}
+{% set isVideo = media.type.value == 'video' %}
+{% set alt = media.caption ?: (isVideo ? 'Video' : 'Foto') ~ ' von ' ~ who %}
+{% set shared = media.ready and media.publicationStatus.value == 'published' %}
+<a class="tile{{ media.publicationStatus.value != 'published' ? ' tile--pending' : '' }}" href="{{ path('guest_media', {slug: wedding.slug, id: id}) }}"
+   {% if media.ready %}
+       data-lightbox-target="tile" data-action="lightbox#open"
+       data-src="{{ media_url(media, 'image/display') }}"
+       {% if isVideo %}data-video="{{ media_url(media, 'video.mp4') }}"{% endif %}
+       data-uploader="{{ who }}" data-when="{{ media.createdAt|ago }}" data-caption="{{ media.caption }}" data-alt="{{ alt }}"
+       {% if shared %}data-like-url="{{ path('guest_media_like', {slug: wedding.slug, id: id}) }}" data-likes="{{ likeCounts[id] ?? 0 }}" data-liked="{{ (liked[id] ?? false) ? '1' : '0' }}"{% endif %}
+   {% endif %}
+   data-turbo-frame="_top">
+    {% if media.ready %}
+        {# Blur-up: winzige unscharfe Vorschau sofort, scharfes Bild blendet darüber ein. #}
+        <span class="tile__blur" style="background-image: url('{{ media_url(media, 'image/tiny') }}')" aria-hidden="true"></span>
+        <img class="tile__img" src="{{ media_url(media, 'image/thumb') }}" alt="{{ alt }}" loading="lazy" decoding="async">
+        {% if isVideo %}<span class="tile__video">{{ ui.icon('play', 14) }} {{ media.durationSeconds|duration }}</span>{% endif %}
+    {% else %}
+        <span class="tile__placeholder">{{ media.processingStatus.value == 'failed' ? 'Fehlgeschlagen' : 'Wird verarbeitet …' }}</span>
+    {% endif %}
+    {% if meta|default(false) and media.ready %}
+        <span class="tile__meta"><span class="tile__who">{{ who }}</span>{% if media.caption %}<span class="tile__caption">{{ media.caption }}</span>{% endif %}</span>
+    {% endif %}
+    {% if showStatus|default(false) %}
+        <span class="tile__flag">
+            {% if media.publicationStatus.value == 'pending' %}<span class="status status--pending">Wartet</span>
+            {% elseif media.publicationStatus.value == 'rejected' %}<span class="status status--error">Abgelehnt</span>
+            {% elseif media.visibility.value == 'uploader_only' %}<span class="status">Privat</span>
+            {% elseif media.visibility.value == 'couple' %}<span class="status">Brautpaar</span>
+            {% elseif media.challenge %}<span class="status status--done">Aufgabe</span>{% endif %}
+        </span>
+    {% elseif shared and (likeCounts[id] ?? 0) > 0 %}
+        <span class="tile__likes">{{ ui.icon('heart_filled', 12) }} {{ likeCounts[id] }}</span>
+    {% endif %}
+</a>

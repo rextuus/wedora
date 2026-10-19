@@ -1,0 +1,11 @@
+parameters:
+    # Startlevel nach initialer Prüfung (leere Codebasis): max.
+    level: max
+    paths:
+        - src
+        - tests
+    tmpDir: var/phpstan
+    symfony:
+        containerXmlPath: var/cache/dev/App_KernelDevDebugContainer.xml
+    doctrine:
+        objectManagerLoader: tests/object-manager.php

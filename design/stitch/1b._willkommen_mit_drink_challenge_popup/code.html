@@ -1,0 +1,225 @@
+<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"><meta content="mobile_blank" name="shell-type"><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..700;1,400..700&amp;family=Plus+Jakarta+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#fbf9f6;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      "colors": {
+        "secondary-container": "#ebdece",
+        "surface-tint": "#536255",
+        "primary-fixed-dim": "#bacbba",
+        "primary-container": "#607062",
+        "on-secondary-container": "#6b6155",
+        "primary-fixed": "#d6e7d6",
+        "secondary-fixed-dim": "#d1c5b6",
+        "outline-variant": "#c3c8c1",
+        "secondary": "#665d51",
+        "surface-container-high": "#eae8e5",
+        "outline": "#747872",
+        "on-surface-variant": "#434843",
+        "on-background": "#1b1c1a",
+        "on-primary-fixed": "#101f14",
+        "surface-container-highest": "#e4e2df",
+        "on-tertiary": "#ffffff",
+        "on-surface": "#1b1c1a",
+        "tertiary": "#47584a",
+        "surface": "#fbf9f6",
+        "tertiary-fixed-dim": "#b9cbba",
+        "background": "#fbf9f6",
+        "on-primary-container": "#e2f3e2",
+        "inverse-primary": "#bacbba",
+        "surface-bright": "#fbf9f6",
+        "surface-container-low": "#f5f3f0",
+        "on-secondary": "#ffffff",
+        "tertiary-fixed": "#d4e8d5",
+        "on-tertiary-container": "#e0f3e0",
+        "on-tertiary-fixed-variant": "#3a4b3d",
+        "tertiary-container": "#5f7061",
+        "on-tertiary-fixed": "#0f1f14",
+        "on-error": "#ffffff",
+        "error-container": "#ffdad6",
+        "on-primary": "#ffffff",
+        "inverse-on-surface": "#f2f0ed",
+        "on-secondary-fixed": "#211b11",
+        "inverse-surface": "#30312f",
+        "secondary-fixed": "#eee0d1",
+        "on-secondary-fixed-variant": "#4e453a",
+        "surface-variant": "#e4e2df",
+        "surface-dim": "#dbdad7",
+        "primary": "#48584a",
+        "error": "#ba1a1a",
+        "surface-container-lowest": "#ffffff",
+        "on-primary-fixed-variant": "#3b4a3e",
+        "on-error-container": "#93000a",
+        "surface-container": "#efeeeb"
+      },
+      "borderRadius": {
+        "DEFAULT": "0.25rem",
+        "lg": "0.5rem",
+        "xl": "0.75rem",
+        "full": "9999px"
+      },
+      "spacing": {
+        "gutter": "1rem",
+        "space-sm": "0.5rem",
+        "space-xl": "2.5rem",
+        "margin": "1.25rem",
+        "space-lg": "1.5rem",
+        "gutter-desktop": "2rem",
+        "margin-tablet": "2.5rem",
+        "margin-desktop": "4rem",
+        "gutter-tablet": "1.5rem",
+        "space-md": "1rem",
+        "space-xs": "0.25rem"
+      },
+      "fontFamily": {
+        "label-lg": ["Plus Jakarta Sans"],
+        "display-hero": ["Playfair Display"],
+        "body-sm": ["Plus Jakarta Sans"],
+        "display-hero-mobile": ["Playfair Display"],
+        "headline-lg": ["Playfair Display"],
+        "headline-sm": ["Playfair Display"],
+        "label-md": ["Plus Jakarta Sans"],
+        "body-lg": ["Plus Jakarta Sans"],
+        "label-caption": ["Plus Jakarta Sans"],
+        "headline-lg-mobile": ["Playfair Display"],
+        "headline-md": ["Playfair Display"],
+        "body-md": ["Plus Jakarta Sans"]
+      },
+      "fontSize": {
+        "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.03em", "fontWeight": "600"}],
+        "display-hero": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.01em", "fontWeight": "400"}],
+        "body-sm": ["13px", {"lineHeight": "18px", "letterSpacing": "0.005em", "fontWeight": "400"}],
+        "display-hero-mobile": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.01em", "fontWeight": "400"}],
+        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "0em", "fontWeight": "400"}],
+        "headline-sm": ["18px", {"lineHeight": "26px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+        "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.04em", "fontWeight": "600"}],
+        "body-lg": ["17px", {"lineHeight": "26px", "letterSpacing": "-0.005em", "fontWeight": "400"}],
+        "label-caption": ["11px", {"lineHeight": "14px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+        "headline-lg-mobile": ["26px", {"lineHeight": "34px", "letterSpacing": "0em", "fontWeight": "400"}],
+        "headline-md": ["22px", {"lineHeight": "30px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+        "body-md": ["15px", {"lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "400"}]
+      }
+    }
+  }
+};</script></head><body class="bg-surface text-on-surface min-h-screen flex flex-col font-body-md text-body-md antialiased pt-safe pb-safe"><main class="flex-1 flex flex-col relative w-full bg-surface"><div class="flex flex-col w-full relative">
+<!-- Soft Botanical Underlying Page (The stationery guest welcome form) -->
+<div aria-hidden="true" class="w-full px-margin pb-space-xl flex flex-col items-center select-none">
+<!-- Delicate Monogram Crest -->
+<div class="mt-space-md mb-space-sm flex flex-col items-center">
+<div class="w-16 h-16 rounded-full bg-secondary-container flex items-center justify-center shadow-sm">
+<span class="font-headline-sm text-headline-sm text-on-secondary-container tracking-widest font-normal">A &amp; L</span>
+</div>
+<div class="mt-space-xs flex items-center gap-2">
+<span class="w-4 h-px bg-outline-variant"></span>
+<p class="font-label-caption text-label-caption uppercase tracking-widest text-secondary">Schlossgut Hohenstein</p>
+<span class="w-4 h-px bg-outline-variant"></span>
+</div>
+<p class="font-label-caption text-label-caption text-outline">18. Juli 2025</p>
+</div>
+<!-- Editorial Welcome Heading -->
+<div class="text-center mb-space-lg">
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-on-background">Gäste-Begleiter</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-space-xs">Erlebe unseren Tag &amp; teile deine schönsten Augenblicke mit uns.</p>
+</div>
+<!-- Stationery Form Card Representation -->
+<div class="w-full bg-surface-container-low rounded-xl p-space-lg shadow-sm flex flex-col gap-space-md">
+<div class="flex flex-col gap-space-xs">
+<label class="font-label-md text-label-md text-secondary">DEIN NAME</label>
+<div class="w-full bg-surface-container-lowest rounded-lg px-space-md py-3 text-on-surface font-body-md flex items-center justify-between shadow-sm">
+<span class="">Sophie</span>
+<span class="material-symbols-outlined text-primary text-lg" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+</div>
+<div class="flex flex-col gap-space-xs">
+<label class="font-label-md text-label-md text-secondary">TISCHNUMMER / ROLLE</label>
+<div class="w-full bg-surface-container-lowest rounded-lg px-space-md py-3 text-outline font-body-md shadow-sm">
+<span class="">Tisch 4 – Lindengarten</span>
+</div>
+</div>
+<!-- Inactive Form Button -->
+<div class="w-full bg-primary-container text-on-primary font-label-lg text-label-lg py-3 rounded-full text-center opacity-70">
+        Weiter zum Hochzeitsalbum
+      </div>
+</div>
+<!-- Subtle Preview Grid of Album Moments -->
+<div class="w-full mt-space-xl flex flex-col gap-space-sm opacity-50">
+<p class="font-label-md text-label-md text-secondary uppercase tracking-wider text-center">Erste Live-Eindrücke</p>
+<div class="grid grid-cols-2 gap-space-sm w-full">
+<div class="h-28 rounded-lg overflow-hidden bg-surface-container shadow-sm">
+<img class="w-full h-full object-cover" data-alt="Warm summer wedding table arrangement at Schlossgut Hohenstein with vintage crystal glasses, linen napkins, eucalyptus leaves, and gentle sunlight through old trees." src="https://lh3.googleusercontent.com/aida-public/AB6AXuADKlS0QkoWq0blsWDbEOVDMWV23p31BA4DUyO4ZUknSK8Ocieb3w9aVQQqkW8AvI5g7bZ_UabVl-dqlN9NLHTpK3nHZnRYyw7fpQU8ePh4qHMjIFrjY93MejCllZ_t7CwfWS4KjuFcK4ViF0f88b6Bhh8Zx0rCVR47S_e_jvaw7j0MAnnT3_knvjJ6-q8e6RfYGutESHViHrSMI7F7FjVOBQxail579DYh7CxK4mUJtm5Bzc3dd8cZ">
+</div>
+<div class="h-28 rounded-lg overflow-hidden bg-surface-container shadow-sm">
+<img class="w-full h-full object-cover" data-alt="Chic guests dressed in sage green and natural linen cheering with champagne flutes outdoors under historical stone arches, warm glowing ambience." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDzR2rCvXM2c9QVfUu0wo3BJfamaSPWImfQZ9EDDeYpM_wKtqmOJXJPUOsPsKv9C0VfAo6cpU6CQUrXgjeyeRR_Mz06KWtW4WAurvprYQ5yoNVh3ouDiPLkj95qZTTk_tK9G1AuDkVflCQmFcbldIW0euoH4S-Y9h4gshhriKHkuzXvb8GyU_hnFMRzC155V9qpRYlxQB1Vw8qlDXufJvXSbcfTVqyabE41FomSdIxfsbw1NJSybLWm">
+</div>
+</div>
+</div>
+</div>
+<!-- Warm Frosted Backdrop Overlay with Tactile Fade -->
+<div class="fixed inset-0 z-40 bg-on-background/45 backdrop-blur-md flex flex-col justify-end transition-opacity duration-300" id="welcome-modal-overlay">
+<!-- Bottom Modal Dialog / Keepsake Card Sheet -->
+<div aria-labelledby="modal-greeting-title" aria-modal="true" class="w-full bg-surface-container-lowest rounded-t-3xl shadow-xl flex flex-col p-margin pb-space-xl relative overflow-hidden animate-in fade-in slide-in-from-bottom duration-300 max-h-[92vh] overflow-y-auto" role="dialog">
+<!-- Tactile Paper Accent Line (Sheet Handle) -->
+<div class="w-12 h-1 bg-outline-variant/60 rounded-full mx-auto mb-space-md shrink-0"></div>
+<!-- Festive Floral / Confetti Organic Top Badge -->
+<div class="flex items-center justify-center mb-space-sm">
+<div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-caption text-label-caption uppercase tracking-wider">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">favorite</span>
+<span class="">Anna &amp; Lukas • 18. Juli</span>
+</div>
+</div>
+<!-- Primary Modal Greeting -->
+<div class="text-center mb-space-md"><h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-background leading-tight" id="modal-greeting-title">Willkommen, Sophie!</h2><p class="font-headline-sm text-headline-sm text-primary italic mt-1 font-normal">Schön, dass du da bist 🥂</p><p class="font-body-md text-body-md text-on-surface-variant mt-1.5 max-w-xs mx-auto font-medium">Machst du bei unserer First Drink Challenge mit?</p></div>
+<!-- Mission 01 Interactive Keepsake Card (First Drink) -->
+<div class="w-full bg-surface-container-low rounded-xl p-space-md mb-space-lg shadow-sm flex flex-col gap-space-sm relative overflow-hidden"><div class="flex items-center justify-between"><div class="inline-flex items-center gap-1 bg-primary text-on-primary px-2.5 py-0.5 rounded-full font-label-caption text-label-caption uppercase tracking-wider"><span class="w-1.5 h-1.5 rounded-full bg-secondary-fixed animate-ping"></span><span class="">Mission 01 • First Drink 🥂</span></div><span class="font-label-caption text-label-caption text-secondary font-semibold">1 / 5 Challenges</span></div><div class="relative w-full rounded-xl overflow-hidden bg-surface-container shadow-sm mt-1"><img class="w-full h-36 object-cover" data-alt="Kurzes Beispiel-Video: Gast stößt mit Sektglas an" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDzR2rCvXM2c9QVfUu0wo3BJfamaSPWImfQZ9EDDeYpM_wKtqmOJXJPUOsPsKv9C0VfAo6cpU6CQUrXgjeyeRR_Mz06KWtW4WAurvprYQ5yoNVh3ouDiPLkj95qZTTk_tK9G1AuDkVflCQmFcbldIW0euoH4S-Y9h4gshhriKHkuzXvb8GyU_hnFMRzC155V9qpRYlxQB1Vw8qlDXufJvXSbcfTVqyabE41FomSdIxfsbw1NJSybLWm"><div class="absolute inset-0 bg-on-background/45 flex flex-col justify-between p-3"><div class="flex justify-end"><span class="bg-surface-container-lowest/80 text-on-surface font-label-caption text-label-caption px-2 py-0.5 rounded-full backdrop-blur-md font-semibold">0:12 Min • So geht's</span></div><div class="flex items-center justify-center"><div class="w-12 h-12 rounded-full bg-surface-container-lowest/80 text-primary flex items-center justify-center shadow-md backdrop-blur-md"><span class="material-symbols-outlined text-2xl ml-1" style="font-variation-settings: 'FILL' 1;">play_arrow</span></div></div><div class="flex items-center gap-1.5 bg-surface-container-lowest/80 backdrop-blur-md px-2.5 py-1 rounded-full text-on-surface self-start"><span class="material-symbols-outlined text-sm text-primary">smart_display</span><span class="font-label-caption text-label-caption font-medium">Laura stößt an 🥂</span></div></div></div><div class="flex items-center justify-between bg-surface-container-lowest/80 rounded-lg p-space-sm mt-1"><div class="flex items-center gap-space-xs"><div class="flex -space-x-2 overflow-hidden"><div class="w-7 h-7 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container font-label-caption text-[10px] font-bold">MK</div><div class="w-7 h-7 rounded-full bg-primary-fixed-dim flex items-center justify-center text-on-primary-fixed font-label-caption text-[10px] font-bold">TL</div><div class="w-7 h-7 rounded-full bg-secondary-fixed flex items-center justify-center text-on-secondary-fixed font-label-caption text-[10px] font-bold">JW</div></div><p class="font-body-sm text-body-sm text-on-surface ml-1 font-medium">28 Gäste haben schon angestoßen</p></div><span class="material-symbols-outlined text-primary text-base">photo_library</span></div></div>
+<!-- Action Area -->
+<div class="flex flex-col gap-space-sm w-full">
+<!-- Botanical Forest Green CTA Button -->
+<button class="w-full min-h-[50px] bg-primary hover:bg-tertiary active:scale-[0.99] transition-all text-on-primary font-label-lg text-label-lg rounded-full flex items-center justify-center gap-2 shadow-md px-space-lg" id="btn-camera" type="button">
+<span class="material-symbols-outlined text-xl">photo_camera</span>
+<span class="">Ja, jetzt Glas knipsen 📷</span>
+</button>
+<!-- Polite Secondary Navigation Option -->
+<button class="w-full py-2.5 text-center text-on-surface-variant hover:text-on-surface active:opacity-75 transition-colors font-body-sm text-body-sm flex items-center justify-center gap-1" id="btn-dashboard" type="button"><span class="">Später &amp; zum Dashboard</span><span class="material-symbols-outlined text-sm">chevron_right</span></button>
+</div>
+<!-- Polite Micro-hint for Ease of Use -->
+<p class="font-label-caption text-label-caption text-center text-outline mt-space-sm">
+        Keine App-Installation nötig • Fotos werden sicher im privaten Gästebuch gespeichert
+      </p>
+</div>
+</div>
+<script>
+    (function() {
+      const btnCamera = document.getElementById('btn-camera');
+      const btnDashboard = document.getElementById('btn-dashboard');
+      const overlay = document.getElementById('welcome-modal-overlay');
+
+      function dismissModal(feedbackMsg) {
+        if (!overlay) return;
+        overlay.classList.add('opacity-0', 'pointer-events-none');
+        setTimeout(function() {
+          overlay.style.display = 'none';
+        }, 300);
+      }
+
+      if (btnCamera) {
+        btnCamera.addEventListener('click', function() {
+          btnCamera.disabled = true;
+          btnCamera.innerHTML = '<span class="material-symbols-outlined animate-spin text-xl">progress_activity</span><span>Kamera öffnet sich...</span>';
+          setTimeout(function() {
+            dismissModal('Kamera gestartet');
+          }, 600);
+        });
+      }
+
+      if (btnDashboard) {
+        btnDashboard.addEventListener('click', function() {
+          dismissModal('Zum Dashboard');
+        });
+      }
+    })();
+  </script>
+</div></main>
+
+
+</body></html>

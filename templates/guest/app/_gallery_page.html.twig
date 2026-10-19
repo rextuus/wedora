@@ -1,0 +1,13 @@
+{# Eine Seite Kacheln; „Mehr laden“ holt die nächste als Turbo-Frame (lädt beim Scrollen nach). #}
+<turbo-frame id="gallery-page-{{ app.request.query.get('vor') ?: 'start' }}">
+    <div class="magazine">
+        {% for media in items %}
+            {{ include('guest/app/_tile.html.twig', {meta: true}) }}
+        {% endfor %}
+    </div>
+    {% if next %}
+        <turbo-frame id="gallery-page-{{ next }}" src="{{ path('guest_gallery', {slug: wedding.slug, filter: filter.value, vor: next}) }}" loading="lazy" class="more">
+            <a class="button button--secondary button--block" href="{{ path('guest_gallery', {slug: wedding.slug, filter: filter.value, vor: next}) }}">Mehr laden</a>
+        </turbo-frame>
+    {% endif %}
+</turbo-frame>

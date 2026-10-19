@@ -1,0 +1,41 @@
+{% extends 'guest/app/_layout.html.twig' %}
+{% import 'components/icon.html.twig' as ui %}
+{% import 'components/ornament.html.twig' as deco %}
+
+{% block title %}{{ challenge.title }} – {{ wedding.title }}{% endblock %}
+{% block section %}Aufgaben{% endblock %}
+
+{% block content %}
+    <a class="text-link back-link" href="{{ path('guest_challenges', {slug: wedding.slug}) }}">{{ ui.icon('back', 14) }} Alle Aufgaben</a>
+
+    <header class="section-header challenge-hero card">
+        <span class="challenge-hero__motif">{{ deco.motif(challenge_motif(challenge.title), 140) }}</span>
+        <p class="badge">{{ ui.icon('flag', 14) }} Aufgabe</p>
+        <h1 class="display">{{ challenge.title }}</h1>
+        {% if challenge.description %}<p class="lead">{{ challenge.description }}</p>{% endif %}
+    </header>
+
+    <section class="mission card">
+        <div class="card__head">
+            <p class="overline">{{ challenge.mediaType.label }}{% if wedding.areChallengePointsEnabled() and challenge.points %} · {{ challenge.points }} Punkte{% endif %}</p>
+            {% if done %}<span class="status status--done">{{ ui.icon('check', 14) }} Erledigt</span>{% endif %}
+        </div>
+        {% if challenge.acceptsAt(now) %}
+            <a class="button button--primary" href="{{ path('guest_upload', {slug: wedding.slug, aufgabe: challenge.id}) }}">{{ ui.icon('camera', 18) }} {{ done ? 'Noch einen Beitrag' : 'Jetzt mitmachen' }}</a>
+        {% elseif not challenge.hasStartedAt(now) %}
+            <p class="lead">{{ ui.icon('lock', 18) }} Wird ab {{ challenge.startsAt|date('H:i') }} Uhr aktiv.</p>
+        {% else %}
+            <p class="lead">Diese Aufgabe ist beendet.</p>
+        {% endif %}
+        {% if participants %}<p class="muted">{{ participants }} {{ participants == 1 ? 'Gast hat' : 'Gäste haben' }} schon mitgemacht</p>{% endif %}
+    </section>
+
+    {% if contributions is not empty %}
+        <h2 class="overline">Beiträge</h2>
+        <div class="grid" data-controller="lightbox gallery-motion" data-lightbox-token-value="{{ csrf_token('guest-action') }}">
+            {% for media in contributions %}
+                {{ include('guest/app/_tile.html.twig', {likeCounts: {}, liked: {}}) }}
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endblock %}

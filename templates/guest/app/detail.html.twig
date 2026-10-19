@@ -1,0 +1,70 @@
+{% extends 'guest/app/_layout.html.twig' %}
+{% import 'components/icon.html.twig' as ui %}
+
+{% block title %}{{ media.caption ?: 'Moment' }} – {{ wedding.title }}{% endblock %}
+{% block section %}Galerie{% endblock %}
+
+{% block content %}
+    <a class="text-link back-link" href="{{ path('guest_gallery', {slug: wedding.slug}) }}">{{ ui.icon('back', 18) }} Zur Galerie</a>
+
+    <figure class="detail">
+        {% if media.type.value == 'video' and media.ready %}
+            <video class="detail__media" controls playsinline preload="metadata" poster="{{ media_url(media, 'image/display') }}">
+                <source src="{{ media_url(media, 'video.mp4') }}" type="video/mp4">
+                Dein Browser kann dieses Video nicht abspielen.
+            </video>
+        {% elseif media.ready %}
+            <img class="detail__media" src="{{ media_url(media, 'image/display') }}" alt="{{ media.caption ?: 'Foto von ' ~ (media.uploaderGuest.displayName ?? 'einem Gast') }}">
+        {% else %}
+            <div class="detail__placeholder">{{ media.processingStatus.value == 'failed' ? (media.processingError ?: 'Verarbeitung fehlgeschlagen') : 'Wird noch verarbeitet …' }}</div>
+        {% endif %}
+        <figcaption class="detail__meta">
+            <div>
+                <p><strong>{{ media.uploaderGuest.displayName ?? 'Gast' }}</strong> · <span class="muted">{{ media.createdAt|ago }}</span></p>
+                {% if media.caption %}<p class="detail__caption">{{ media.caption }}</p>{% endif %}
+                {% if own %}{{ include('guest/app/_status_badges.html.twig') }}{% endif %}
+            </div>
+            {% if media.ready and media.publicationStatus.value == 'published' %}
+                {{ include('guest/app/_like.html.twig', {count: likeCount, liked: isLiked}) }}
+            {% endif %}
+        </figcaption>
+    </figure>
+
+    {% if own %}
+        <section class="card">
+            <form method="post" action="{{ path('guest_media_caption', {slug: wedding.slug, id: media.id}) }}" class="stack">
+                <input type="hidden" name="_token" value="{{ csrf_token('guest-action') }}">
+                <div class="field">
+                    <label for="caption">Bildunterschrift</label>
+                    <input id="caption" name="caption" maxlength="140" value="{{ media.caption }}" placeholder="z. B. Sonnenuntergang am See">
+                </div>
+                <button class="button button--secondary" type="submit">Speichern</button>
+            </form>
+        </section>
+    {% endif %}
+
+    {% if canDelete %}
+        <form method="post" action="{{ path('guest_media_delete', {slug: wedding.slug, id: media.id}) }}" data-turbo-confirm="Wirklich löschen? Das kann nicht rückgängig gemacht werden.">
+            <input type="hidden" name="_token" value="{{ csrf_token('guest-action') }}">
+            <button class="button button--secondary button--block button--danger" type="submit">{{ ui.icon('trash', 18) }} Löschen</button>
+        </form>
+    {% elseif not own %}
+        <details class="report">
+            <summary>{{ ui.icon('report', 18) }} Melden</summary>
+            <form method="post" action="{{ path('guest_media_report', {slug: wedding.slug, id: media.id}) }}" class="stack">
+                <input type="hidden" name="_token" value="{{ csrf_token('guest-action') }}">
+                <fieldset class="choice-group choice-group--stacked">
+                    <legend>Warum?</legend>
+                    {% for reason in reasons %}
+                        <label class="choice"><input type="radio" name="reason" value="{{ reason.value }}"{% if loop.first %} checked{% endif %}> {{ reason.label }}</label>
+                    {% endfor %}
+                </fieldset>
+                <div class="field">
+                    <label for="note">Hinweis (optional)</label>
+                    <input id="note" name="note" maxlength="500">
+                </div>
+                <button class="button button--secondary" type="submit">An das Brautpaar melden</button>
+            </form>
+        </details>
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,24 @@
+{# Schlankes, barrierearmes Formular-Theme passend zu app.css. #}
+{% block form_row %}
+    {% set has_errors = errors|length > 0 %}
+    <div class="field">
+        {{ form_label(form) }}
+        {{ form_widget(form, {attr: (attr|default({}))|merge(has_errors ? {'aria-invalid': 'true'} : {})}) }}
+        {{ form_help(form) }}
+        {{ form_errors(form) }}
+    </div>
+{% endblock %}
+
+{% block form_help %}
+    {% if help is not empty %}
+        <p id="{{ id }}_help" class="help">{{ help }}</p>
+    {% endif %}
+{% endblock %}
+
+{% block form_errors %}
+    {% if errors|length > 0 %}
+        <ul id="{{ id is defined ? id ~ '_errors' : 'form_errors' }}" role="alert">
+            {% for error in errors %}<li>{{ error.message }}</li>{% endfor %}
+        </ul>
+    {% endif %}
+{% endblock %}

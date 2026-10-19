@@ -1,0 +1,55 @@
+{% extends 'admin/_layout.html.twig' %}
+
+{% macro fields(c, types) %}
+    <div class="field"><label>Titel<input name="title" maxlength="80" value="{{ c ? c.title : '' }}" required></label></div>
+    <div class="field"><label>Beschreibung<textarea name="description" rows="2" maxlength="500">{{ c ? c.description : '' }}</textarea></label></div>
+    <div class="form-grid">
+        <div class="field"><label>Beitrag
+            <select name="type">{% for t in types %}<option value="{{ t.value }}"{% if c and c.mediaType == t %} selected{% endif %}>{{ t.label }}</option>{% endfor %}</select></label></div>
+        <div class="field"><label>Punkte<input name="points" type="number" min="0" max="1000" value="{{ c ? c.points : 10 }}"></label></div>
+        <div class="field"><label>Ab (optional)<input name="starts_at" type="datetime-local" value="{{ c and c.startsAt ? c.startsAt|date('Y-m-d\\TH:i') : '' }}"></label></div>
+        <div class="field"><label>Bis (optional)<input name="ends_at" type="datetime-local" value="{{ c and c.endsAt ? c.endsAt|date('Y-m-d\\TH:i') : '' }}"></label></div>
+    </div>
+    <label class="toggle"><input type="checkbox" name="enabled"{% if not c or c.enabled %} checked{% endif %}> Für Gäste sichtbar</label>
+{% endmacro %}
+
+{% block content %}
+    {% if not wedding.module(enum('App\\Wedding\\ModuleType').Challenges).enabled %}
+        <p class="notice">Das Modul „Aufgaben“ ist ausgeschaltet. Gäste sehen die Aufgaben erst, wenn du es in den Einstellungen aktivierst.</p>
+    {% endif %}
+
+    {% if templates is not empty %}
+        <section class="card">
+            <h2 class="headline-sm">Vorschläge übernehmen</h2>
+            <div class="button-row">
+                {% for key, t in templates %}
+                    <form method="post" action="{{ path('admin_challenge_create', {slug: wedding.slug}) }}">{{ include('admin/_csrf.html.twig') }}<input type="hidden" name="template" value="{{ key }}"><button class="chip chip--filter" type="submit">+ {{ t.title }}</button></form>
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+
+    <section class="card">
+        <h2 class="headline-sm">Eigene Aufgabe</h2>
+        <form method="post" action="{{ path('admin_challenge_create', {slug: wedding.slug}) }}" class="stack">
+            {{ include('admin/_csrf.html.twig') }}
+            {{ _self.fields(null, types) }}
+            <button class="button button--primary" type="submit">Anlegen</button>
+        </form>
+    </section>
+
+    <h2 class="headline-md">Aufgaben ({{ challenges|length }})</h2>
+    {% for c in challenges %}
+        <details class="card">
+            <summary class="card__head"><span class="headline-sm">{{ c.title }}</span><span class="muted">{{ participants[c.id.toRfc4122] ?? 0 }} Teilnehmende{% if not c.enabled %} · ausgeblendet{% endif %}</span></summary>
+            <form method="post" action="{{ path('admin_challenge_update', {slug: wedding.slug, id: c.id}) }}" class="stack">
+                {{ include('admin/_csrf.html.twig') }}
+                {{ _self.fields(c, types) }}
+                <div class="button-row">
+                    <button class="button button--primary" type="submit">Speichern</button>
+                    <button class="button button--secondary button--danger" type="submit" name="action" value="loeschen" data-turbo-confirm="Aufgabe löschen? Beiträge bleiben erhalten.">Löschen</button>
+                </div>
+            </form>
+        </details>
+    {% endfor %}
+{% endblock %}

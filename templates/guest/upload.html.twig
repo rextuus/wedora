@@ -1,0 +1,83 @@
+{% extends 'guest/app/_layout.html.twig' %}
+{% import 'components/icon.html.twig' as ui %}
+{% import 'components/ornament.html.twig' as deco %}
+
+{% block title %}Fotos & Videos teilen – {{ wedding.title }}{% endblock %}
+{% block section %}{{ challenge ? 'Aufgabe' : (module.value == 'guestbook' ? 'Gästebuch' : 'Kamera') }}{% endblock %}
+
+{% block content %}
+    <div data-controller="upload"
+         data-upload-endpoint-value="{{ path('api_upload_start', {slug: wedding.slug}) }}"
+         data-upload-mine-endpoint-value="{{ path('api_media_mine', {slug: wedding.slug}) }}"
+         data-upload-module-value="{{ module.value }}"
+         data-upload-challenge-value="{{ challenge ? challenge.id : '' }}"
+         class="stack">
+        <header class="section-header">
+            {% if challenge %}
+                <p class="overline">{{ ui.icon('flag', 14) }} Aufgabe</p>
+                <h1 class="headline-lg">{{ challenge.title }}</h1>
+                {% if challenge.description %}<p class="lead">{{ challenge.description }}</p>{% endif %}
+            {% elseif module.value == 'guestbook' %}
+                <h1 class="headline-lg">Ein <em>Gruß</em> für das Brautpaar</h1>
+                <p class="lead">Foto oder Video für das Gästebuch</p>
+            {% else %}
+                <span class="upload-motif">{{ deco.motif('polaroids', 76) }}</span>
+                <h1 class="headline-lg">Teile deine <em>Momente</em></h1>
+                <p class="lead">Fotos und kurze Videos vom heutigen Tag</p>
+            {% endif %}
+        </header>
+
+        {% if not canUpload %}
+            <p class="notice notice--error" role="status">Hier können gerade keine Beiträge hochgeladen werden.</p>
+        {% else %}
+            <section class="card" aria-labelledby="upload-title">
+                <h2 id="upload-title" class="visually-hidden">Hochladen</h2>
+
+                <fieldset class="choice-group">
+                    <legend>Wer darf es sehen?</legend>
+                    <label class="choice"><input type="radio" name="visibility" value="all_guests"{% if module.value != 'guestbook' %} checked{% endif %}> Alle Gäste</label>
+                    <label class="choice"><input type="radio" name="visibility" value="couple"{% if module.value == 'guestbook' %} checked{% endif %}> Nur das Brautpaar</label>
+                    {% if module.value == 'gallery' %}<label class="choice"><input type="radio" name="visibility" value="uploader_only"> Nur ich</label>{% endif %}
+                </fieldset>
+
+                <div class="field">
+                    <label for="caption">Bildunterschrift (optional)</label>
+                    <input id="caption" maxlength="140" data-upload-target="caption" placeholder="z. B. Unser Tisch beim Dessert">
+                </div>
+
+                <label class="button button--primary button--block file-button">
+                    {{ ui.icon(camera ? 'camera' : 'upload', 20) }} {{ camera ? 'Kamera öffnen' : 'Dateien auswählen' }}
+                    <input type="file" class="visually-hidden"{% if not camera %} multiple{% endif %}
+                           accept="{{ challenge and challenge.mediaType.value == 'photo' ? 'image/*' : (challenge and challenge.mediaType.value == 'video' ? 'video/*' : 'image/jpeg,image/png,image/webp,image/heic,image/heif,video/mp4,video/quicktime,video/webm,video/3gpp') }}"
+                           {% if camera %}capture="environment"{% endif %}
+                           data-upload-target="input" data-action="change->upload#choose">
+                </label>
+
+                <p class="muted">Fotos bis {{ maxPhoto }}, Videos bis {{ maxVideo }} und {{ maxSeconds }} Sekunden. Bei schlechtem Empfang macht der Upload automatisch weiter, sobald die Verbindung wieder da ist.</p>
+                <p class="muted" role="status" aria-live="polite" data-upload-target="summary"></p>
+            </section>
+        {% endif %}
+
+        <ul class="upload-list" data-upload-target="list" aria-live="polite" aria-label="Deine Uploads"></ul>
+
+        <template data-upload-target="template">
+            <li class="upload-item" data-upload-item>
+                <div class="upload-item__head">
+                    <span class="upload-item__name" data-role="name"></span>
+                    <span class="muted" data-role="size"></span>
+                </div>
+                <progress max="100" value="0">0 %</progress>
+                <div class="activity" aria-hidden="true"><span></span></div>
+                <div class="upload-item__foot">
+                    <span class="upload-item__status"><span class="spinner" aria-hidden="true"></span><span data-role="status"></span></span>
+                    <span class="upload-item__actions">
+                        <button type="button" class="link-button" data-role="retry" data-action="upload#retry" hidden>Erneut versuchen</button>
+                        <button type="button" class="link-button" data-role="cancel" data-action="upload#cancel">Abbrechen</button>
+                    </span>
+                </div>
+            </li>
+        </template>
+
+        <p class="center"><a class="text-link" href="{{ path('guest_album', {slug: wedding.slug}) }}">Zu meinem Album</a></p>
+    </div>
+{% endblock %}

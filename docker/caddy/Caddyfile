@@ -1,0 +1,53 @@
+# Wedora – Caddy vor PHP-FPM.
+# SERVER_NAME=":80" lokal (nur HTTP); in Produktion die Domain setzen → automatisches HTTPS.
+{
+	admin off
+}
+
+{$SERVER_NAME::80} {
+	root * /srv/app/public
+	encode zstd gzip
+
+	# Uploads kommen in Stücken zu je 8 MiB; größere Anfragen werden gar nicht erst angenommen.
+	request_body {
+		max_size 9MB
+	}
+
+	header {
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-Frame-Options "DENY"
+		-Server
+	}
+
+	# Interne Pfade dürfen von außen nie erreichbar sein.
+	@internal path /_protected/* /index.php/_protected/*
+	respond @internal 404
+
+	php_fastcgi app:9000 {
+		# Symfony hat die Berechtigung geprüft und verweist per X-Accel-Redirect auf die Datei.
+		@accel header X-Accel-Redirect *
+		handle_response @accel {
+			rewrite * {rp.header.X-Accel-Redirect}
+
+			route {
+				header Cache-Control "private, no-store"
+
+				handle_path /_protected/files/* {
+					root * /srv/media
+					file_server
+				}
+
+				handle_path /_protected/imgproxy/* {
+					reverse_proxy imgproxy:8080 {
+						header_down -Server
+					}
+				}
+
+				respond 404
+			}
+		}
+	}
+
+	file_server
+}

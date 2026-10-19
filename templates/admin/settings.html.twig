@@ -1,0 +1,76 @@
+{% extends 'admin/_layout.html.twig' %}
+
+{% block content %}
+    <section class="card" aria-labelledby="general-title">
+        <h2 id="general-title" class="headline-sm">Allgemein</h2>
+        <form method="post" action="{{ path('admin_settings_general', {slug: wedding.slug}) }}" class="stack">
+            {{ include('admin/_csrf.html.twig') }}
+            <div class="field"><label for="title">Name (wie Gäste ihn sehen)</label><input id="title" name="title" value="{{ wedding.title }}" maxlength="120" required></div>
+            <div class="field"><label for="date">Datum</label><input id="date" name="date" type="date" value="{{ wedding.weddingDate ? wedding.weddingDate|date('Y-m-d') : '' }}"></div>
+            <fieldset class="choice-group choice-group--stacked">
+                <legend>Neue Beiträge</legend>
+                {% for mode in modes %}
+                    <label class="choice"><input type="radio" name="moderation" value="{{ mode.value }}"{% if wedding.moderationMode == mode %} checked{% endif %}>
+                        {{ {'immediate': 'Sofort veröffentlichen', 'approval': 'Erst nach Freigabe sichtbar', 'post_moderation': 'Sofort veröffentlichen, nachträglich prüfen'}[mode.value] }}</label>
+                {% endfor %}
+            </fieldset>
+            <button class="button button--primary" type="submit">Speichern</button>
+        </form>
+    </section>
+
+    <section class="card" aria-labelledby="modules-title">
+        <h2 id="modules-title" class="headline-sm">Module</h2>
+        <form method="post" action="{{ path('admin_settings_modules', {slug: wedding.slug}) }}" class="stack">
+            {{ include('admin/_csrf.html.twig') }}
+            {% for type in modules %}
+                {% set module = wedding.module(type) %}
+                <fieldset class="module-row">
+                    <legend class="visually-hidden">{{ {'gallery': 'Galerie', 'guestbook': 'Gästebuch', 'challenges': 'Aufgaben'}[type.value] }}</legend>
+                    <label class="toggle"><input type="checkbox" name="enabled_{{ type.value }}"{% if module.enabled %} checked{% endif %}> <strong>{{ {'gallery': 'Galerie', 'guestbook': 'Gästebuch', 'challenges': 'Aufgaben'}[type.value] }}</strong></label>
+                    <div class="field">
+                        <label for="close_{{ type.value }}">Beiträge möglich bis (optional)</label>
+                        <input id="close_{{ type.value }}" type="datetime-local" name="close_{{ type.value }}" value="{{ module.contributionsCloseAt ? module.contributionsCloseAt|date('Y-m-d\\TH:i') : '' }}">
+                    </div>
+                </fieldset>
+            {% endfor %}
+            <label class="toggle"><input type="checkbox" name="points"{% if wedding.areChallengePointsEnabled() %} checked{% endif %}> Punkte und Rangliste für Aufgaben anzeigen</label>
+            <label class="toggle"><input type="checkbox" name="portraits"{% if wedding.arePortraitsEnabled() %} checked{% endif %}> Gezeichnete Porträts: Gäste können aus einem Selfie eine Linienzeichnung erstellen lassen</label>
+            <p class="muted">Das Selfie wird dafür mit Einwilligung des Gastes an Google (Gemini) übertragen und danach gelöscht; gespeichert wird nur die Zeichnung, sichtbar nur für den Gast selbst.{% if not portraitsAvailable %} <strong>Derzeit nicht verfügbar: Auf dem Server ist kein Gemini-Schlüssel hinterlegt.</strong>{% endif %}</p>
+            <button class="button button--primary" type="submit">Module speichern</button>
+        </form>
+    </section>
+
+    {% if permissions.manage_lifecycle %}
+        <section class="card" aria-labelledby="lifecycle-title">
+            <h2 id="lifecycle-title" class="headline-sm">Lebenszyklus</h2>
+            <p class="muted">Archivieren beendet alle Beiträge, Gäste können aber weiter ansehen. Es wird nichts gelöscht.</p>
+            <form method="post" action="{{ path('admin_settings_lifecycle', {slug: wedding.slug}) }}">
+                {{ include('admin/_csrf.html.twig') }}
+                <input type="hidden" name="action" value="{{ wedding.active ? 'archivieren' : 'reaktivieren' }}">
+                <button class="button button--secondary" type="submit">{{ wedding.active ? 'Archivieren' : 'Wieder aktivieren' }}</button>
+            </form>
+        </section>
+    {% endif %}
+
+    {% if is_granted('ROLE_PLATFORM_ADMIN') %}
+        {% set l = wedding.limits %}
+        <section class="card" aria-labelledby="limits-title">
+            <h2 id="limits-title" class="headline-sm">Limits (Plattform)</h2>
+            <form method="post" action="{{ path('admin_settings_limits', {slug: wedding.slug}) }}" class="form-grid">
+                {{ include('admin/_csrf.html.twig') }}
+                <div class="field"><label for="max_video_seconds">Videolänge (s, max. {{ platformMaxVideoSeconds }})</label><input id="max_video_seconds" name="max_video_seconds" type="number" min="1" max="{{ platformMaxVideoSeconds }}" value="{{ l.maxVideoSeconds }}"></div>
+                <div class="field"><label for="max_video_mb">Video (MB)</label><input id="max_video_mb" name="max_video_mb" type="number" min="1" value="{{ (l.maxVideoBytes / 1048576)|round }}"></div>
+                <div class="field"><label for="max_photo_mb">Foto (MB)</label><input id="max_photo_mb" name="max_photo_mb" type="number" min="1" value="{{ (l.maxPhotoBytes / 1048576)|round }}"></div>
+                <div class="field"><label for="storage_quota_gb">Speicher gesamt (GB)</label><input id="storage_quota_gb" name="storage_quota_gb" type="number" min="1" step="0.5" value="{{ l.storageQuotaBytes / 1073741824 }}"></div>
+                <div class="field"><label for="guest_quota_gb">Pro Gast (GB, leer = unbegrenzt)</label><input id="guest_quota_gb" name="guest_quota_gb" type="number" min="0.1" step="0.1" value="{{ l.guestQuotaBytes is null ? '' : l.guestQuotaBytes / 1073741824 }}"></div>
+                <button class="button button--primary" type="submit">Limits speichern</button>
+            </form>
+        </section>
+
+        <section class="card card--danger">
+            <h2 class="headline-sm">Hochzeit löschen</h2>
+            <p class="muted">Löscht endgültig alle Fotos, Videos, Einträge, Exporte und Zugänge.</p>
+            <a class="button button--secondary button--danger" href="{{ path('admin_wedding_delete', {slug: wedding.slug}) }}">Löschen …</a>
+        </section>
+    {% endif %}
+{% endblock %}

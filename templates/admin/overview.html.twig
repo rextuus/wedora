@@ -1,0 +1,32 @@
+{% extends 'admin/_layout.html.twig' %}
+{% import 'components/icon.html.twig' as ui %}
+
+{% block content %}
+    <div class="stat-grid">
+        <div class="counter">{{ ui.icon('users', 20) }}<strong>{{ stats.guests }}</strong><span>Gäste</span></div>
+        <div class="counter">{{ ui.icon('photos', 20) }}<strong>{{ stats.photos }}</strong><span>Fotos</span></div>
+        <div class="counter">{{ ui.icon('camera', 20) }}<strong>{{ stats.videos }}</strong><span>Videos</span></div>
+    </div>
+
+    <section class="card" aria-labelledby="storage-title">
+        <h2 id="storage-title" class="headline-sm">Speicher</h2>
+        <progress class="meter" max="100" value="{{ usagePercent }}" aria-describedby="storage-text">{{ usagePercent }} %</progress>
+        <p id="storage-text" class="muted">{{ (usedBytes / 1073741824)|number_format(2, ',', '.') }} GB von {{ (wedding.limits.storageQuotaBytes / 1073741824)|number_format(0, ',', '.') }} GB belegt ({{ usagePercent }} %), inklusive Originalen und laufender Uploads.</p>
+    </section>
+
+    {% if queue %}
+        <section class="card">
+            <h2 class="headline-sm">{{ ui.icon('shield', 20) }} Moderation</h2>
+            <p class="lead">{{ queue.pending }} warten auf Freigabe · {{ queue.unreviewed }} ungesichtet · {{ queue.reports }} Meldungen</p>
+            <a class="button button--secondary" href="{{ path('admin_moderation', {slug: wedding.slug}) }}">Zur Moderation</a>
+        </section>
+    {% endif %}
+
+    {% if permissions.manage_access %}
+        <section class="card">
+            <h2 class="headline-sm">{{ ui.icon('key', 20) }} Zugang</h2>
+            <p class="muted">QR-Code: {{ wedding.access.openLinkEnabled ? 'aktiv' : 'deaktiviert' }} · Passwort: {{ wedding.access.requiresPassword ? 'gesetzt' : 'keins' }} · Einladungen: {{ wedding.access.areInvitationsEnabled() ? 'aktiv' : 'aus' }}</p>
+            <a class="button button--secondary" href="{{ path('admin_access', {slug: wedding.slug}) }}">QR-Code & Einladungen</a>
+        </section>
+    {% endif %}
+{% endblock %}

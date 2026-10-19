@@ -1,0 +1,76 @@
+{% extends 'admin/_layout.html.twig' %}
+
+{% block content %}
+    <section class="card qr-card" aria-labelledby="qr-title">
+        <h2 id="qr-title" class="headline-sm">QR-Code für die Tische</h2>
+        {% if wedding.access.openLinkEnabled %}
+            <img class="qr" src="{{ path('admin_access_qr', {slug: wedding.slug}) }}" alt="QR-Code zum Beitreten" width="220" height="220">
+            <p class="muted break">{{ joinUrl }}</p>
+            <div class="button-row">
+                <a class="button button--primary" href="{{ path('admin_access_qr', {slug: wedding.slug}) }}" download="{{ wedding.slug }}-qr.svg">QR-Code herunterladen</a>
+                <form method="post" action="{{ path('admin_access_link', {slug: wedding.slug}) }}" data-turbo-confirm="Neuen QR-Code erzeugen? Bereits gedruckte Codes funktionieren dann nicht mehr für neue Gäste.">{{ include('admin/_csrf.html.twig') }}<input type="hidden" name="action" value="neu"><button class="button button--secondary" type="submit">Neuen Code erzeugen</button></form>
+                <form method="post" action="{{ path('admin_access_link', {slug: wedding.slug}) }}">{{ include('admin/_csrf.html.twig') }}<input type="hidden" name="action" value="aus"><button class="button button--secondary" type="submit">Deaktivieren</button></form>
+            </div>
+        {% else %}
+            <p class="lead">Der offene Zugang per QR-Code ist deaktiviert. Gäste können nur mit persönlicher Einladung beitreten.</p>
+            <form method="post" action="{{ path('admin_access_link', {slug: wedding.slug}) }}">{{ include('admin/_csrf.html.twig') }}<input type="hidden" name="action" value="an"><button class="button button--primary" type="submit">Aktivieren</button></form>
+        {% endif %}
+    </section>
+
+    <section class="card" aria-labelledby="pw-title">
+        <h2 id="pw-title" class="headline-sm">Hochzeitspasswort</h2>
+        <p class="muted">{{ wedding.access.requiresPassword ? 'Gesetzt: Neue Gäste brauchen es zusätzlich zum QR-Code.' : 'Kein Passwort: Der QR-Code genügt.' }} Persönliche Einladungen funktionieren immer ohne.</p>
+        <form method="post" action="{{ path('admin_access_password', {slug: wedding.slug}) }}" class="inline-form">
+            {{ include('admin/_csrf.html.twig') }}
+            <div class="field"><label for="password">{{ wedding.access.requiresPassword ? 'Neues Passwort' : 'Passwort setzen' }}</label><input id="password" name="password" type="text" minlength="6" autocomplete="off"></div>
+            <button class="button button--primary" type="submit">Speichern</button>
+        </form>
+        {% if wedding.access.requiresPassword %}
+            <form method="post" action="{{ path('admin_access_password', {slug: wedding.slug}) }}">{{ include('admin/_csrf.html.twig') }}<input type="hidden" name="action" value="entfernen"><button class="link-button" type="submit">Passwort entfernen</button></form>
+        {% endif %}
+    </section>
+
+    <section class="card" aria-labelledby="inv-title">
+        <div class="card__head">
+            <h2 id="inv-title" class="headline-sm">Persönliche Einladungen</h2>
+            <form method="post" action="{{ path('admin_access_link', {slug: wedding.slug}) }}">{{ include('admin/_csrf.html.twig') }}<input type="hidden" name="action" value="{{ wedding.access.areInvitationsEnabled() ? 'einladungen-aus' : 'einladungen-an' }}"><button class="link-button" type="submit">{{ wedding.access.areInvitationsEnabled() ? 'Alle Einladungen pausieren' : 'Einladungen wieder erlauben' }}</button></form>
+        </div>
+        {% if newInvitationUrl %}
+            <div class="notice notice--success" role="status">
+                <p><strong>Neuer Einladungslink</strong> – bitte jetzt kopieren, er wird nur einmal angezeigt:</p>
+                <p class="break"><code>{{ newInvitationUrl }}</code></p>
+            </div>
+        {% endif %}
+        <form method="post" action="{{ path('admin_invitation_create', {slug: wedding.slug}) }}" class="inline-form">
+            {{ include('admin/_csrf.html.twig') }}
+            <div class="field"><label for="label">Für wen?</label><input id="label" name="label" maxlength="120" placeholder="z. B. Familie Müller" required></div>
+            <div class="field"><label for="expires">Gültig bis (optional)</label><input id="expires" name="expires" type="date"></div>
+            <button class="button button--primary" type="submit">Link erzeugen</button>
+        </form>
+        {% if invitations is not empty %}
+            <ul class="row-list">
+                {% for inv in invitations %}
+                    <li>
+                        <span><strong>{{ inv.label }}</strong> <span class="muted">{{ inv.revoked ? 'widerrufen' : (inv.expiresAt ? 'bis ' ~ inv.expiresAt|date('d.m.Y') : 'unbefristet') }}</span></span>
+                        {% if not inv.revoked %}
+                            <form method="post" action="{{ path('admin_invitation_revoke', {slug: wedding.slug, id: inv.id}) }}" data-turbo-confirm="Einladung widerrufen? Gäste, die darüber beigetreten sind, verlieren den Zugang.">{{ include('admin/_csrf.html.twig') }}<button class="link-button" type="submit">Widerrufen</button></form>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </section>
+
+    <section class="card" aria-labelledby="guests-title">
+        <h2 id="guests-title" class="headline-sm">Gäste ({{ guests|length }})</h2>
+        {% if guests is empty %}<p class="muted">Noch niemand beigetreten.</p>{% endif %}
+        <ul class="row-list">
+            {% for g in guests %}
+                <li>
+                    <span><strong>{{ g.displayName }}</strong> <span class="muted">{{ g.joinMethod.value == 'invitation' ? 'Einladung „' ~ (g.invitation.label ?? '–') ~ '“' : 'QR-Code' }} · {{ g.createdAt|date('d.m. H:i') }}{% if g.blocked %} · gesperrt{% endif %}{% if g.invitation and g.invitation.revoked %} · Einladung widerrufen{% endif %}</span></span>
+                    <form method="post" action="{{ path('admin_guest_block', {slug: wedding.slug, id: g.id, action: g.blocked ? 'entsperren' : 'sperren'}) }}">{{ include('admin/_csrf.html.twig') }}<button class="link-button" type="submit">{{ g.blocked ? 'Entsperren' : 'Sperren' }}</button></form>
+                </li>
+            {% endfor %}
+        </ul>
+    </section>
+{% endblock %}

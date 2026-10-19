@@ -1,0 +1,10 @@
+{% import 'components/icon.html.twig' as ui %}
+<turbo-frame id="like-{{ media.id }}">
+    <form method="post" action="{{ path('guest_media_like', {slug: wedding.slug, id: media.id}) }}" class="like-form">
+        <input type="hidden" name="_token" value="{{ csrf_token('guest-action') }}">
+        <button type="submit" class="like-button{{ liked ? ' is-liked' : '' }}" aria-pressed="{{ liked ? 'true' : 'false' }}"
+                aria-label="{{ liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir' }} ({{ count }})">
+            {{ ui.icon(liked ? 'heart_filled' : 'heart', 22) }}<span>{{ count }}</span>
+        </button>
+    </form>
+</turbo-frame>

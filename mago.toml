@@ -1,0 +1,30 @@
+php-version = "8.4.0"
+
+[source]
+paths = ["src", "tests", "migrations"]
+includes = ["vendor"]
+excludes = ["var", "config/reference.php"]
+
+[formatter]
+print-width = 120
+
+[linter]
+integrations = ["symfony", "phpunit", "doctrine"]
+
+[linter.rules]
+# Symfony-Konvention: self::assert*().
+assertion-style = { style = "self" }
+# Rein stilistisch; bei Funktionen wie strtr()/hash_hmac() kontraproduktiv.
+literal-named-argument = { enabled = false }
+# Konstruktor-Injektion von Diensten ist kein „langer Parameterlisten“-Smell.
+excessive-parameter-list = { constructor-threshold = 8 }
+# Integrationstests bündeln bewusst mehrere Prüfschritte eines Szenarios.
+too-many-methods = { threshold = 20 }
+# Doctrine-Entities bündeln naturgemäß viele Felder.
+too-many-properties = { threshold = 20 }
+# Komplexität pro Methode bewerten; zentrale Regelklassen dürfen in Summe komplexer sein.
+cyclomatic-complexity = { threshold = 30, method-threshold = 10 }
+
+[analyzer]
+# Bootstrap-Datei für phpstan-doctrine; der Container ist dort nur generisch typisiert.
+excludes = ["tests/object-manager.php"]

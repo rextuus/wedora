@@ -1,0 +1,44 @@
+{% extends 'guest/app/_layout.html.twig' %}
+{% import 'components/icon.html.twig' as ui %}
+{% import 'components/ornament.html.twig' as deco %}
+
+{% block title %}Mein Album – {{ wedding.title }}{% endblock %}
+{% block section %}Mein Album{% endblock %}
+
+{% block content %}
+    <header class="section-header">
+        <p class="overline">Persönliches Album</p>
+        <h1 class="headline-lg">Deine <em>Momente</em></h1>
+        <div class="counters">
+            <div class="counter"><strong>{{ photos }}</strong><span>{{ photos == 1 ? 'Foto' : 'Fotos' }}</span></div>
+            <div class="counter"><strong>{{ videos }}</strong><span>{{ videos == 1 ? 'Video' : 'Videos' }}</span></div>
+            {% if challenges is not empty %}<div class="counter"><strong>{{ completed|length }}/{{ challenges|length }}</strong><span>Aufgaben</span></div>{% endif %}
+        </div>
+    </header>
+
+    {% if items is empty %}
+        <section class="empty-state card">
+            {{ deco.motif('polaroids', 80) }}
+            <p class="lead">Du hast noch nichts geteilt.</p>
+            <a class="button button--primary" href="{{ path('guest_upload', {slug: wedding.slug}) }}">Fotos & Videos teilen</a>
+        </section>
+    {% else %}
+        <div class="grid" data-controller="lightbox gallery-motion" data-lightbox-token-value="{{ csrf_token('guest-action') }}">
+            {% for media in items %}
+                {{ include('guest/app/_tile.html.twig', {showStatus: true, likeCounts: {}, liked: {}}) }}
+            {% endfor %}
+        </div>
+        <p class="muted">„Wartet“: erscheint nach der Freigabe · „Privat“: nur für dich · „Brautpaar“: nur für das Brautpaar</p>
+    {% endif %}
+
+    {% if challenges is not empty %}
+        <section>
+            <h2 class="overline">{{ ui.icon('flag', 14) }} Deine Aufgaben</h2>
+            <ul class="mission-list">
+                {% for c in challenges %}
+                    <li><a href="{{ path('guest_challenge', {slug: wedding.slug, id: c.id}) }}"><span>{{ c.title }}</span><span class="muted">{{ completed[c.id.toRfc4122] ?? false ? '✓ Erledigt' : 'Offen' }}</span></a></li>
+                {% endfor %}
+            </ul>
+        </section>
+    {% endif %}
+{% endblock %}

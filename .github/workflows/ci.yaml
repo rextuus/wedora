@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qa:
+    runs-on: ubuntu-24.04
+    services:
+      database:
+        image: mysql:8.4.11
+        env:
+          MYSQL_DATABASE: app
+          MYSQL_USER: app
+          MYSQL_PASSWORD: ci-only-password
+          MYSQL_ROOT_PASSWORD: ci-only-root-password
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -u root -pci-only-root-password --silent"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      APP_ENV: test
+      # Root nur in der CI, damit die Testdatenbank angelegt werden kann.
+      DATABASE_URL: mysql://root:ci-only-root-password@127.0.0.1:3306/app?serverVersion=8.4.11&charset=utf8mb4
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: intl, pdo_mysql, zip, apcu
+          coverage: none
+          tools: composer:v2
+
+      - name: Composer-Cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer
+          key: composer-${{ hashFiles('composer.lock') }}
+
+      - run: composer validate --strict --no-check-publish
+      - run: composer install --no-interaction --no-progress
+      - run: composer audit
+
+      - name: Container für PHPStan aufwärmen
+        run: php bin/console cache:warmup --env=dev
+
+      - run: vendor/bin/phpstan analyse --no-progress --memory-limit=1G
+      - run: vendor/bin/mago lint
+      - run: vendor/bin/mago analyze
+      - run: vendor/bin/mago format --check
+      - run: php bin/console lint:twig templates
+      - run: php bin/console lint:yaml config
+      - run: php bin/console lint:container --env=prod
+
+      - name: Testdatenbank vorbereiten
+        run: |
+          php bin/console doctrine:database:create --if-not-exists
+          php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
+
+      - run: php bin/phpunit
+
+  # Sicherheits-Gate: ffmpeg-Verarbeitung und geschützte Auslieferung gegen den echten Stack.
+  media-gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: make up
+      - run: make install
+      - run: make db
+      - run: make test-media
+      - name: Logs bei Fehler
+        if: failure()
+        run: docker compose --env-file .env.docker.local logs --tail 200
