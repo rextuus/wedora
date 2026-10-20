@@ -5,6 +5,11 @@ framework:
     # Note that the session will be started ONLY if you read or write from it.
     session: true
 
+    # PHP-FPM ist nur über den eigenen Caddy erreichbar; dessen X-Forwarded-* (https, Gast-IP) gelten.
+    # Caddy übernimmt sie seinerseits nur vom Reverse-Proxy (REVERSE_PROXY_IPS im Caddyfile).
+    trusted_proxies: '%env(TRUSTED_PROXIES)%'
+    trusted_headers: ['x-forwarded-for', 'x-forwarded-proto', 'x-forwarded-host', 'x-forwarded-port']
+
     #esi: true
     #fragments: true
 

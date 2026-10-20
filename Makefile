@@ -79,7 +79,7 @@ prod-secrets: ## Produktion: .env.prod.local mit Zufallswerten anlegen (übersch
 		    -e "s/^IMGPROXY_SALT=.*/IMGPROXY_SALT=$$(openssl rand -hex 32)/" \
 		    -e "s/^MEDIA_TOKEN_SECRET=.*/MEDIA_TOKEN_SECRET=$$(openssl rand -hex 32)/" \
 		    .env.prod.dist > $(PROD_ENV) && chmod 600 $(PROD_ENV) && \
-		echo "$(PROD_ENV) erzeugt – jetzt SERVER_NAME, DEFAULT_URI (und optional GEMINI_API_KEY) eintragen." )
+		echo "$(PROD_ENV) erzeugt – jetzt DEFAULT_URI, HTTP_BIND, REVERSE_PROXY_IPS (und optional GEMINI_API_KEY) eintragen." )
 
 prod-up: ## Produktion: Images bauen, Datenbank migrieren, alles starten
 	$(PROD_DC) build
@@ -106,6 +106,8 @@ prod-demo: ## Produktion: Vorführ-Hochzeit mit Beispieldaten aus $(DEMO_DIR) an
 
 prod-status: ## Produktion: Zustand auf einen Blick (Container, Gesundheit, Speicher, Hintergrundjobs)
 	@$(PROD_DC) ps --format 'table {{.Service}}\t{{.Status}}'
+	@echo; echo "Webserver (das, was der Reverse-Proxy auf dem VPS erreicht):"
+	@$(PROD_DC) exec -T web wget -q -O- http://127.0.0.1/healthz 2>/dev/null | sed 's/^/  /' || echo "  FEHLER"
 	@echo; echo "Gesundheit (Datenbank aus Sicht der App):"
 	@$(PROD_DC) exec -T app php -r 'require "vendor/autoload.php"; (new Symfony\Component\Dotenv\Dotenv())->bootEnv(".env"); $$k = new App\Kernel("prod", false); $$k->boot(); $$k->getContainer()->get("doctrine")->getConnection()->executeQuery("SELECT 1"); echo "  ok\n";' || echo "  FEHLER"
 	@echo; echo "Speicher:"

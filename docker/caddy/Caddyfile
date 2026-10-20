@@ -1,7 +1,14 @@
 # Wedora – Caddy vor PHP-FPM.
-# SERVER_NAME=":80" lokal (nur HTTP); in Produktion die Domain setzen → automatisches HTTPS.
+# Lokal und in Produktion nur HTTP (SERVER_NAME=":80"): HTTPS macht live der Caddy auf dem VPS, der über
+# WireGuard hierher weiterleitet (docs/deployment.md).
 {
 	admin off
+	servers {
+		# Von diesen Adressen (dem Reverse-Proxy) werden X-Forwarded-For/-Proto übernommen: echte Gast-IP
+		# und „kam per HTTPS“. Von allen anderen setzt Caddy die Werte selbst (nicht fälschbar).
+		trusted_proxies static {$REVERSE_PROXY_IPS:private_ranges}
+		client_ip_headers X-Forwarded-For
+	}
 }
 
 {$SERVER_NAME::80} {

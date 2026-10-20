@@ -75,20 +75,6 @@
         </a>
     {% endif %}
 
-    <section class="install-hint" hidden data-controller="install-hint" data-install-hint-link-value="{{ path('guest_app_link', {slug: wedding.slug}) }}" aria-label="Auf den Startbildschirm legen">
-        <img class="install-hint__icon" src="{{ asset('images/app-icon-192.png') }}" alt="" width="44" height="44">
-        <div class="install-hint__text">
-            <p class="install-hint__title">Auf den Startbildschirm</p>
-            <p>Dann bist du mit einem Tipp wieder hier – ohne QR-Code.</p>
-            <button type="button" class="button button--primary install-hint__button" hidden data-install-hint-target="install" data-action="install-hint#install">Hinzufügen</button>
-            <div hidden data-install-hint-target="ios">
-                <button type="button" class="button button--primary install-hint__button" data-action="install-hint#prepareIos">Link vorbereiten</button>
-            </div>
-            <p hidden data-install-hint-target="iosReady">Jetzt unten auf {{ ui.icon('share', 16) }} <strong>Teilen</strong> tippen und <strong>„Zum Home-Bildschirm“</strong> wählen. Der Link gilt nur für dich und nur einmal – bitte nicht verschicken.</p>
-            <p hidden data-install-hint-target="other">Öffne das Browsermenü <strong>⋮</strong> und wähle <strong>„Zum Startbildschirm hinzufügen“</strong>.</p>
-        </div>
-        <button type="button" class="install-hint__close" aria-label="Hinweis ausblenden" data-action="install-hint#dismiss">{{ ui.icon('close', 18) }}</button>
-    </section>
 
     {% if challenges is not empty %}
         <section aria-labelledby="mission-title">
@@ -156,4 +142,20 @@
     {% endif %}
 
     {{ include('guest/_privacy_note.html.twig', {link: true}) }}
+
+    {# Ganz unten: nicht wichtiger als Fotos und Aufgaben. #}
+    <section class="install-hint" hidden data-controller="install-hint" data-install-hint-link-value="{{ path('guest_app_link', {slug: wedding.slug}) }}" aria-label="Auf den Startbildschirm legen">
+        <img class="install-hint__icon" src="{{ asset('images/app-icon-192.png') }}" alt="" width="44" height="44">
+        <div class="install-hint__text">
+            <p class="install-hint__title">Auf den Startbildschirm</p>
+            <p>Dann bist du mit einem Tipp wieder hier – ohne QR-Code.</p>
+            <button type="button" class="button button--primary install-hint__button" hidden data-install-hint-target="install" data-action="install-hint#install">Hinzufügen</button>
+            <div hidden data-install-hint-target="ios">
+                <button type="button" class="button button--primary install-hint__button" data-action="install-hint#prepareIos">Link vorbereiten</button>
+            </div>
+            <p hidden data-install-hint-target="iosReady">Jetzt unten auf {{ ui.icon('share', 16) }} <strong>Teilen</strong> tippen und <strong>„Zum Home-Bildschirm“</strong> wählen. Der Link gilt nur für dich und nur einmal – bitte nicht verschicken.</p>
+            <p hidden data-install-hint-target="other">Öffne das Browsermenü <strong>⋮</strong> und wähle <strong>„Zum Startbildschirm hinzufügen“</strong>.</p>
+        </div>
+        <button type="button" class="install-hint__close" aria-label="Hinweis ausblenden" data-action="install-hint#dismiss">{{ ui.icon('close', 18) }}</button>
+    </section>
 {% endblock %}

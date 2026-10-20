@@ -51,6 +51,14 @@ class Challenge
     #[ORM\Column]
     private DateTimeImmutable $createdAt;
 
+    /** Nur „Foto mit gezeichnetem Gast“: höchstens so viele Fotos je Partner … */
+    #[ORM\Column(options: ['default' => 3])]
+    private int $buddyLimit = 3;
+
+    /** … und so viele Minuten Pause für den Partner nach einem Foto bzw. während einer Zulosung. */
+    #[ORM\Column(options: ['default' => 30])]
+    private int $buddyPauseMinutes = 30;
+
     public function __construct(
         #[ORM\ManyToOne]
         #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
@@ -165,6 +173,26 @@ class Challenge
     public function hasEndedAt(DateTimeImmutable $now): bool
     {
         return null !== $this->endsAt && $now >= $this->endsAt;
+    }
+
+    public function getBuddyLimit(): int
+    {
+        return $this->buddyLimit;
+    }
+
+    public function getBuddyPauseMinutes(): int
+    {
+        return $this->buddyPauseMinutes;
+    }
+
+    public function setBuddyRules(int $limit, int $pauseMinutes): void
+    {
+        if ($limit < 1 || $limit > 50 || $pauseMinutes < 0 || $pauseMinutes > 600) {
+            throw new InvalidArgumentException('Fotos je Gast: 1–50, Pause: 0–600 Minuten.');
+        }
+
+        $this->buddyLimit = $limit;
+        $this->buddyPauseMinutes = $pauseMinutes;
     }
 
     /** Beiträge möglich: aktiviert, im Zeitfenster und Hochzeit nimmt Beiträge an. */

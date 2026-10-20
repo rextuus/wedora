@@ -63,15 +63,17 @@ services:
     restart: unless-stopped
     logging: *logging
     environment:
-      SERVER_NAME: ${SERVER_NAME:?SERVER_NAME fehlt in .env.prod.local}
+      # Nur HTTP: HTTPS und Zertifikat macht der Caddy auf dem VPS, der über WireGuard hierher weiterleitet.
+      SERVER_NAME: ":80"
+      # Nur von diesen Adressen gelten X-Forwarded-* (Gast-IP, https): die WireGuard-IP des VPS.
+      REVERSE_PROXY_IPS: ${REVERSE_PROXY_IPS:-private_ranges}
     volumes:
       - media_data:/srv/media:ro
       - caddy_data:/data
       - caddy_config:/config
     ports:
-      - "${HTTP_PORT:-80}:80"
-      - "${HTTPS_PORT:-443}:443"
-      - "${HTTPS_PORT:-443}:443/udp"
+      # Ein einziger Port nach außen; am besten nur auf der WireGuard-Adresse dieses Rechners (HTTP_BIND).
+      - "${HTTP_BIND:-0.0.0.0}:${HTTP_PORT:-8190}:80"
     depends_on:
       - app
       - imgproxy

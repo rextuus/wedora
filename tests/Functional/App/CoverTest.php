@@ -75,7 +75,10 @@ final class CoverTest extends WebTestCase
         $this->client->request('GET', "/h/{$slug}");
         self::assertSelectorExists('img.hero__image[src^="' . $coverUrl . '"]');
         self::assertSelectorNotExists('.home-mosaic', 'Mit festem Titelbild kein Mosaik …');
-        self::assertSelectorExists('[aria-labelledby="fresh-title"] .tile', '… dafür der Streifen „Frisch von der Feier“.');
+        self::assertSelectorExists(
+            '[aria-labelledby="fresh-title"] .tile',
+            '… dafür der Streifen „Frisch von der Feier“.',
+        );
         $this->client->request('GET', $coverUrl);
         self::assertResponseIsSuccessful();
 
@@ -120,7 +123,11 @@ final class CoverTest extends WebTestCase
         $this->actAsGuest($guest, $secret);
 
         $this->client->request('GET', "/h/{$wedding->getSlug()}");
-        self::assertSelectorCount(5, '.home-mosaic .magazine .tile', 'Sechs neueste, davon ein gesperrtes Drink-Video weg.');
+        self::assertSelectorCount(
+            5,
+            '.home-mosaic .magazine .tile',
+            'Sechs neueste, davon ein gesperrtes Drink-Video weg.',
+        );
         self::assertSelectorNotExists('.home-mosaic .tile--locked');
         self::assertSelectorExists('.home-mosaic a.button[href="/h/' . $wedding->getSlug() . '/galerie"]');
         self::assertSelectorTextContains('.home-mosaic', 'Zur Galerie');
