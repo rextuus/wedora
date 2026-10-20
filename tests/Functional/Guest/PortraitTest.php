@@ -315,6 +315,11 @@ final class PortraitTest extends WebTestCase
         $this->client->loginUser(self::fresh($user));
 
         $crawler = $this->client->request('GET', "/admin/h/{$wedding->getSlug()}/einstellungen");
+        // Auflösung der Accessoires für das Brautpaar, mit den Namen aus dem Titel.
+        self::assertSelectorTextContains('.gadget-key', 'Wen kennst du länger?');
+        self::assertSelectorTextContains('.gadget-key', 'Beide gleich lang');
+        self::assertSelectorTextContains('.gadget-key', 'mit Herz-Tattoo');
+        self::assertSelectorTextNotContains('.gadget-key', 'brille');
         $form = $crawler->selectButton('Module speichern')->form();
         $values = $form->getPhpValues();
         $values['portrait_styles'] = ['line', 'watercolor', 'comic', 'erfunden'];

@@ -44,6 +44,27 @@ final class PortraitPromptTest extends TestCase
         self::assertStringContainsString('No text, no letters', $prompt);
     }
 
+    public function testNoGlassesAndNoAccessoryDominates(): void
+    {
+        $count = [];
+        foreach (PortraitQuestions::all(CoupleNames::fromTitle('Larissa & Tim')) as $question) {
+            foreach ($question['answers'] as $answer) {
+                $gadget = $answer['gadget'];
+                self::assertNotContains(
+                    $gadget,
+                    [PortraitGadget::Sunglasses, PortraitGadget::HeartGlasses],
+                    'Viele tragen schon eine Brille.',
+                );
+                self::assertNotSame('', $gadget->prompt());
+                $count[$gadget->value] = ($count[$gadget->value] ?? 0) + 1;
+            }
+        }
+
+        self::assertNotSame([], $count);
+        self::assertLessThanOrEqual(2, max($count), 'Kein Accessoire bei mehr als zwei Antworten.');
+        self::assertGreaterThanOrEqual(12, count($count), 'Viel Abwechslung.');
+    }
+
     public function testItIsTheSurpriseForKnowingBothEquallyLong(): void
     {
         $names = CoupleNames::fromTitle('Larissa & Tim');

@@ -76,7 +76,7 @@ async function joinAsGuest(name, device = 'iPhone 14') {
     await a.click('button[type=submit]');
     await a.waitForLoadState('networkidle');
     const admin = slugPath.replace('/h/', '/admin/h/');
-    for (const [name, path] of [['Hochzeiten', '/admin'], ['Übersicht', admin], ['Moderation', `${admin}/moderation`], ['Zugang', `${admin}/zugang`], ['Aufgaben', `${admin}/aufgaben`], ['Umfrage', `${admin}/umfrage`], ['Einstellungen', `${admin}/einstellungen`], ['Export', `${admin}/export`], ['Team', `${admin}/team`]]) {
+    for (const [name, path] of [['Hochzeiten', '/admin'], ['Übersicht', admin], ['Moderation', `${admin}/moderation`], ['Zugang', `${admin}/zugang`], ['Aufgaben', `${admin}/aufgaben`], ['Umfrage', `${admin}/umfrage`], ['Einstellungen', `${admin}/einstellungen`], ['Export', `${admin}/export`], ['Team', `${admin}/team`], ['Porträt-Prompt', `${admin}/portraet-prompt`]]) {
         const response = await a.goto(base + path, { waitUntil: 'networkidle' });
         if (response.status() >= 400) { failures.push(`[Verwaltung] ${name}: HTTP ${response.status()}`); continue; }
         await audit(a, `Verwaltung: ${name}`);

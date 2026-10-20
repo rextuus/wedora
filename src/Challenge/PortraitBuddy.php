@@ -136,7 +136,17 @@ final readonly class PortraitBuddy
             return;
         }
 
-        $this->current($seeker, $challenge)?->completeWith($media, $this->now());
+        $assignment = $this->current($seeker, $challenge);
+        if (null === $assignment) {
+            return;
+        }
+
+        $assignment->completeWith($media, $this->now());
+        // Ohne eigene Beschreibung: beide Namen und ein Spruch („Karl und Mareike – Dreamteam“).
+        if (null === $media->getCaption()) {
+            $media->changeCaption(BuddyCaption::for($seeker, $assignment->getPartner()));
+        }
+
         $this->em->flush();
     }
 

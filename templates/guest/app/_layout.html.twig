@@ -15,6 +15,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
 {% endblock %}
 
+{# Gemeinsamer Foto-Look der Hochzeit (Einstellungen), wirkt auch im Vollbild, das an <body> hängt. #}
+{% block body_attributes %} class="look-{{ wedding.presentation.photoLook.value }}"{% endblock %}
+
 {% block body %}
     {% set slug = wedding.slug %}
     <a class="skip-link" href="#main">Zum Inhalt springen</a>

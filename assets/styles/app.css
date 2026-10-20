@@ -740,3 +740,34 @@ a.drink-explainer__step:hover .drink-explainer__go { text-decoration: underline;
 .codeword-choices form { margin: 0; }
 .codeword-choice { font-family: var(--font-serif); font-size: 1.25rem; }
 .center { text-align: center; }
+
+/* Foto-Look der Hochzeit (Einstellungen → Foto-Look): nur Anzeige, Originale bleiben unverändert. */
+.look-warm { --photo-filter: sepia(.32) saturate(1.15) contrast(.92) brightness(1.06); }
+.look-light { --photo-filter: brightness(1.14) contrast(.84) saturate(.85); }
+.look-film { --photo-filter: contrast(1.16) saturate(.68) sepia(.24) brightness(1.02); }
+.look-mono { --photo-filter: grayscale(1) contrast(1.08) brightness(1.03); }
+.tile__img, .detail__media, .hero__image, .lightbox__slide img, .lightbox__slide video, .lightbox__ghost {
+    filter: var(--photo-filter, none);
+}
+.look-pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr)); gap: .75rem; border: 0; margin: 0; padding: 0; }
+.look-pick__option { display: flex; flex-direction: column; gap: .4rem; padding: .4rem; border-radius: var(--radius-md); box-shadow: var(--ring) var(--line); cursor: pointer; font-size: 13px; text-align: center; }
+.look-pick__option img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--radius-sm); filter: var(--photo-filter, none); }
+.look-pick__option:has(input:checked) { box-shadow: var(--ring) var(--ink), 0 0 0 1px var(--ink); font-weight: 600; }
+.look-pick__option:has(input:focus-visible) { box-shadow: var(--ring) var(--ink), var(--focus); }
+
+/* Verwaltung: Auflösung der Porträt-Accessoires */
+.gadget-key summary { cursor: pointer; font-weight: 600; }
+.gadget-key[open] { display: flex; flex-direction: column; gap: .75rem; }
+.gadget-key__table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.gadget-key__table caption { text-align: left; font-family: var(--font-serif); font-size: 1.05rem; padding: .25rem 0; }
+.gadget-key__table th, .gadget-key__table td { padding: .3rem .5rem; border-top: 1px solid var(--line); text-align: left; font-weight: 400; }
+.gadget-key__table td { color: var(--text-muted); }
+
+/* Verwaltung: Porträt-Prompt testen */
+.prompt-box { display: flex; flex-direction: column; gap: .6rem; }
+.prompt-box__text { width: 100%; padding: .8rem 1rem; border: 1px solid var(--line-strong); border-radius: var(--radius-md); background: var(--bg-input); font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--text); resize: vertical; }
+.prompt-box .button { align-self: flex-start; }
+.prompt-facts { display: grid; grid-template-columns: max-content 1fr; gap: .3rem 1rem; margin: 0; font-size: 14px; }
+.prompt-facts dt { color: var(--text-muted); }
+.prompt-facts dd { margin: 0; }
+.field--action { align-self: end; }

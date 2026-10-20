@@ -25,14 +25,14 @@ final class PortraitQuestions
                     'family' => ['label' => 'Familie', 'gadget' => PortraitGadget::Crown],
                     'school' => ['label' => 'Schule oder Studium', 'gadget' => PortraitGadget::BowTie],
                     'work' => ['label' => 'Arbeit', 'gadget' => PortraitGadget::TopHat],
-                    'friends' => ['label' => 'Freundeskreis oder Verein', 'gadget' => PortraitGadget::Sunglasses],
+                    'friends' => ['label' => 'Freundeskreis oder Verein', 'gadget' => PortraitGadget::HeartBoppers],
                 ],
             ],
             'wish' => [
                 'question' => 'Was wünschst du den beiden?',
                 'answers' => [
-                    'travel' => ['label' => 'Viele Reisen', 'gadget' => PortraitGadget::Sunglasses],
-                    'love' => ['label' => 'Ganz viel Liebe', 'gadget' => PortraitGadget::HeartGlasses],
+                    'travel' => ['label' => 'Viele Reisen', 'gadget' => PortraitGadget::Butterfly],
+                    'love' => ['label' => 'Ganz viel Liebe', 'gadget' => PortraitGadget::Dove],
                     'party' => ['label' => 'Immer einen Grund zum Feiern', 'gadget' => PortraitGadget::PartyHat],
                     'home' => ['label' => 'Ein Zuhause voller Blumen', 'gadget' => PortraitGadget::FlowerCrown],
                 ],
@@ -40,9 +40,9 @@ final class PortraitQuestions
             'tonight' => [
                 'question' => 'Was machst du heute am liebsten?',
                 'answers' => [
-                    'dance' => ['label' => 'Tanzen', 'gadget' => PortraitGadget::PartyHat],
-                    'food' => ['label' => 'Essen und Trinken', 'gadget' => PortraitGadget::BowTie],
-                    'talk' => ['label' => 'Quatschen', 'gadget' => PortraitGadget::HeartGlasses],
+                    'dance' => ['label' => 'Tanzen', 'gadget' => PortraitGadget::FeatherBoa],
+                    'food' => ['label' => 'Essen und Trinken', 'gadget' => PortraitGadget::EarFlower],
+                    'talk' => ['label' => 'Quatschen', 'gadget' => PortraitGadget::Bubbles],
                     'late' => ['label' => 'Feiern bis zum Schluss', 'gadget' => PortraitGadget::Confetti],
                 ],
             ],
@@ -57,8 +57,8 @@ final class PortraitQuestions
             'since' => [
                 'question' => 'Wie lange kennst du die beiden schon?',
                 'answers' => [
-                    'today' => ['label' => 'Seit heute', 'gadget' => PortraitGadget::Confetti],
-                    'years' => ['label' => 'Ein paar Jahre', 'gadget' => PortraitGadget::Sunglasses],
+                    'today' => ['label' => 'Seit heute', 'gadget' => PortraitGadget::Bubbles],
+                    'years' => ['label' => 'Ein paar Jahre', 'gadget' => PortraitGadget::HeartBoppers],
                     'forever' => ['label' => 'Gefühlt schon ewig', 'gadget' => PortraitGadget::Crown],
                 ],
             ],

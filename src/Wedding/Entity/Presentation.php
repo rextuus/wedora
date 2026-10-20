@@ -8,6 +8,7 @@ use App\Wedding\CoverMode;
 use App\Wedding\Host\HostPronoun;
 use App\Wedding\Host\WeddingPicture;
 use App\Wedding\NudgeMode;
+use App\Wedding\PhotoLook;
 use DateTimeImmutable;
 use Doctrine\ORM\Mapping as ORM;
 use InvalidArgumentException;
@@ -47,6 +48,10 @@ class Presentation
 
     #[ORM\Column(nullable: true)]
     private ?DateTimeImmutable $coverPhotoAt = null;
+
+    /** Gemeinsamer Look aller Fotos (nur Anzeige). */
+    #[ORM\Column(length: 8, enumType: PhotoLook::class, options: ['default' => 'natural'])]
+    private PhotoLook $photoLook = PhotoLook::Natural;
 
     /** Figur „Zu viel am Handy?“: taucht nach einiger Zeit oder vielen Beiträgen auf – oder gar nicht. */
     #[ORM\Column(length: 8, enumType: NudgeMode::class, options: ['default' => 'time'])]
@@ -128,6 +133,16 @@ class Presentation
     public function showsFixedCover(): bool
     {
         return CoverMode::Fixed === $this->coverMode && null !== $this->coverPhotoAt;
+    }
+
+    public function getPhotoLook(): PhotoLook
+    {
+        return $this->photoLook;
+    }
+
+    public function choosePhotoLook(PhotoLook $look): void
+    {
+        $this->photoLook = $look;
     }
 
     public function getNudgeMode(): NudgeMode

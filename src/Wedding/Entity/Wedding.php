@@ -65,7 +65,7 @@ class Wedding
     #[ORM\Column(length: 8, enumType: PortraitStyleMode::class, options: ['default' => 'random'])]
     private PortraitStyleMode $portraitStyleMode = PortraitStyleMode::Random;
 
-    /** Zufälliges Accessoire (Sonnenbrille, Partyhut …) im Porträt. */
+    /** Überraschungs-Accessoire (Krone, Federboa, Herz-Tattoo …) im Porträt; welches, bestimmt eine Frage beim Selfie. */
     #[ORM\Column(options: ['default' => true])]
     private bool $portraitGadgets = true;
 

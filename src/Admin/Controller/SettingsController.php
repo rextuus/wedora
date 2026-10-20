@@ -7,8 +7,12 @@ namespace App\Admin\Controller;
 use App\Account\WeddingPermission;
 use App\Ai\AiBudget;
 use App\Ai\ImageGenerator;
+use App\Guest\Portrait\PortraitQuestions;
 use App\Guest\Portrait\PortraitStyle;
 use App\Guest\Portrait\PortraitStyleMode;
+use App\Media\MediaType;
+use App\Media\Repository\MediaRepository;
+use App\Wedding\CoupleNames;
 use App\Wedding\CoverMode;
 use App\Wedding\Entity\Wedding;
 use App\Wedding\Host\HostPronoun;
@@ -18,6 +22,7 @@ use App\Wedding\Host\WeddingPictureUpload;
 use App\Wedding\ModerationMode;
 use App\Wedding\ModuleType;
 use App\Wedding\NudgeMode;
+use App\Wedding\PhotoLook;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use InvalidArgumentException;
@@ -43,7 +48,7 @@ final class SettingsController extends AdminController
     ) {}
 
     #[Route('', name: 'admin_settings', methods: ['GET'])]
-    public function index(string $slug): Response
+    public function index(string $slug, MediaRepository $media): Response
     {
         $wedding = $this->wedding($slug, WeddingPermission::Configure);
 
@@ -59,6 +64,14 @@ final class SettingsController extends AdminController
             'coverModes' => CoverMode::cases(),
             'pronouns' => HostPronoun::cases(),
             'nudgeModes' => NudgeMode::cases(),
+            'photoLooks' => PhotoLook::cases(),
+            'portraitQuestions' => PortraitQuestions::all(CoupleNames::of($wedding)),
+            // Vorschau der Looks am neuesten Foto der Hochzeit.
+            'lookSample' => $media->findOneBy([
+                'wedding' => $wedding,
+                'type' => MediaType::Photo,
+                'deletedAt' => null,
+            ], ['id' => 'DESC']),
         ]);
     }
 
@@ -197,6 +210,21 @@ final class SettingsController extends AdminController
 
         $this->em->flush();
         $this->addFlash('success', 'Handy-Hinweis gespeichert.');
+
+        return $this->redirectToRoute('admin_settings', ['slug' => $slug]);
+    }
+
+    /** Gemeinsamer Look aller Fotos (nur Anzeige). */
+    #[Route('/foto-look', name: 'admin_settings_look', methods: ['POST'])]
+    public function look(Request $request, string $slug): Response
+    {
+        $wedding = $this->wedding($slug, WeddingPermission::Configure);
+        $this->requireCsrf($request);
+        $wedding
+            ->getPresentation()
+            ->choosePhotoLook(PhotoLook::tryFrom($request->request->getString('photo_look')) ?? PhotoLook::Natural);
+        $this->em->flush();
+        $this->addFlash('success', 'Foto-Look gespeichert.');
 
         return $this->redirectToRoute('admin_settings', ['slug' => $slug]);
     }

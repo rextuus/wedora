@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Functional\App;
 
 use App\Account\WeddingPermission;
+use App\Challenge\BuddyCaption;
 use App\Challenge\BuddyStatus;
 use App\Challenge\ChallengeMediaType;
 use App\Challenge\Entity\BuddyAssignment;
@@ -56,7 +57,12 @@ final class BuddyTest extends WebTestCase
         $assignment = self::em()
             ->getRepository(BuddyAssignment::class)
             ->findOneBy(['seeker' => self::fresh($me)]);
-        self::assertSame($mediaId, $assignment?->getMedia()?->getId()->toRfc4122(), 'Das Foto hakt die Zulosung ab.');
+        $media = $assignment?->getMedia();
+        self::assertNotNull($media, 'Das Foto hakt die Zulosung ab.');
+        self::assertSame($mediaId, $media->getId()->toRfc4122());
+        $caption = (string) $media->getCaption();
+        self::assertStringStartsWith('Ich und Lea – ', $caption, 'Automatische Bildbeschreibung mit beiden Namen …');
+        self::assertContains(substr($caption, strlen('Ich und Lea – ')), BuddyCaption::PHRASES, '… und einem Spruch.');
         $crawler = $this->client->request('GET', "/h/{$wedding->getSlug()}/aufgaben");
         self::assertContains('Foto mit einem gezeichneten Gast', $crawler
             ->filter('.challenge-item.is-done h2')

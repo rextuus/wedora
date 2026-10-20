@@ -1,0 +1,36 @@
+{% extends 'admin/_layout.html.twig' %}
+
+{% block content %}
+    <a class="text-link back-link" href="{{ path('admin_settings', {slug: wedding.slug}) }}">‹ Einstellungen</a>
+
+    <section class="card stack" aria-labelledby="prompt-title">
+        <h2 id="prompt-title" class="headline-sm">Porträt-Prompt testen</h2>
+        <p class="muted">Genau dieser Text geht zusammen mit dem Selfie an Gemini. Zum Ausprobieren kopieren und mit einem eigenen Foto z. B. im Google AI Studio testen – diese Seite selbst schickt nichts an Gemini und kostet nichts.</p>
+
+        <form method="get" class="form-grid">
+            <div class="field"><label>Stil
+                <select name="stil">
+                    {% for s in styles %}<option value="{{ s.value }}"{% if s == style %} selected{% endif %}>{{ s.label }}</option>{% endfor %}
+                </select></label></div>
+            <div class="field"><label>Accessoire
+                <select name="accessoire">
+                    <option value=""{% if not gadget %} selected{% endif %}>ohne Accessoire</option>
+                    {% for g in gadgets %}<option value="{{ g.value }}"{% if g == gadget %} selected{% endif %}>{{ g.label }}{% if inUse[g.value] is not defined %} (wird nicht mehr vergeben){% endif %}</option>{% endfor %}
+                </select></label></div>
+            <div class="field field--action"><button class="button button--secondary" type="submit">Anzeigen</button></div>
+        </form>
+
+        <div class="prompt-box" data-controller="clipboard">
+            <textarea class="prompt-box__text" data-clipboard-target="source" readonly rows="9" aria-label="Prompt">{{ prompt }}</textarea>
+            <button class="button button--primary" type="button" data-action="clipboard#copy" data-clipboard-target="button">Prompt kopieren</button>
+        </div>
+
+        <dl class="prompt-facts">
+            <dt>Bild-Anhang</dt><dd>das Selfie des Gastes (vor dem Prompt)</dd>
+            <dt>Modell</dt><dd><code>{{ model }}</code></dd>
+            <dt>Seitenverhältnis</dt><dd>1:1</dd>
+            {% if gadget and gadget.value == 'heart_tattoo' %}<dt>Initialen</dt><dd>{{ initials ?? 'keine – der Titel enthält keine zwei Namen, das Herz bleibt leer' }}</dd>{% endif %}
+            {% if style.isLineArt() %}<dt>Danach</dt><dd>Bei „Feine Linien“ stellt die App das Ergebnis frei und färbt es in der Akzentfarbe ein.</dd>{% endif %}
+        </dl>
+    </section>
+{% endblock %}

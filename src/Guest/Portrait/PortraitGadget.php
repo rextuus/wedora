@@ -9,6 +9,9 @@ use App\Wedding\CoupleNames;
 /**
  * Accessoire, das ins Porträt mitgezeichnet wird – im selben Stil wie das Porträt. Welches, bestimmt die
  * Antwort auf eine zufällige Frage beim Selfie (PortraitQuestions).
+ *
+ * Sonnenbrille und Herzbrille werden nicht mehr vergeben (wer schon eine Brille trägt, bekäme eine zweite);
+ * sie bleiben nur für bereits gezeichnete Porträts erhalten.
  */
 enum PortraitGadget: string
 {
@@ -21,6 +24,12 @@ enum PortraitGadget: string
     case Crown = 'crown';
     case Confetti = 'confetti';
     case HeartTattoo = 'heart_tattoo';
+    case HeartBoppers = 'heart_boppers';
+    case FeatherBoa = 'feather_boa';
+    case Butterfly = 'butterfly';
+    case Bubbles = 'bubbles';
+    case EarFlower = 'ear_flower';
+    case Dove = 'dove';
 
     public function label(): string
     {
@@ -34,6 +43,12 @@ enum PortraitGadget: string
             self::Crown => 'mit Krone',
             self::Confetti => 'im Konfettiregen',
             self::HeartTattoo => 'mit Herz-Tattoo',
+            self::HeartBoppers => 'mit Herzchen-Haarreif',
+            self::FeatherBoa => 'mit Federboa',
+            self::Butterfly => 'mit Schmetterling',
+            self::Bubbles => 'mit Seifenblasen',
+            self::EarFlower => 'mit Blüte hinterm Ohr',
+            self::Dove => 'mit Taube auf der Schulter',
         };
     }
 
@@ -57,6 +72,12 @@ enum PortraitGadget: string
                     'with a small cute heart tattoo on one cheek, with the initials "%s" written inside the heart',
                     $initials,
                 ),
+            self::HeartBoppers => 'wearing a playful headband with two little hearts bobbing on springs',
+            self::FeatherBoa => 'wearing a fluffy feather boa around the neck',
+            self::Butterfly => 'with a small butterfly resting on one shoulder',
+            self::Bubbles => 'with a few soap bubbles floating around the head',
+            self::EarFlower => 'with a single flower tucked behind one ear',
+            self::Dove => 'with a small white dove sitting on one shoulder',
         };
     }
 
