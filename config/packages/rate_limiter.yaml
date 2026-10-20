@@ -11,3 +11,15 @@ framework:
             policy: fixed_window
             limit: 5
             interval: '1 day'
+
+        # Wiederherstellen per Codewort (Auswahl aus drei): ein Versuch pro Name und Hochzeit alle 15 Minuten …
+        guest_codeword_name:
+            policy: fixed_window
+            limit: 1
+            interval: '15 minutes'
+
+        # … und höchstens fünf Versuche pro Gerät (IP), egal für welchen Namen.
+        guest_codeword_device:
+            policy: sliding_window
+            limit: 5
+            interval: '15 minutes'

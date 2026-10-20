@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Media\Controller;
 
+use App\Challenge\ChallengeUploadRules;
 use App\Challenge\Repository\ChallengeRepository;
 use App\Media\Access\MediaUrlGenerator;
 use App\Media\MediaDeleter;
@@ -79,8 +80,12 @@ final class GuestMediaController extends GuestApiController
     }
 
     #[Route('/upload', name: 'guest_upload', methods: ['GET'])]
-    public function uploadPage(Request $request, ChallengeRepository $challenges, ClockInterface $clock): Response
-    {
+    public function uploadPage(
+        Request $request,
+        ChallengeRepository $challenges,
+        ClockInterface $clock,
+        ChallengeUploadRules $rules,
+    ): Response {
         $guest = $this->guest($request);
         $wedding = $guest->getWedding();
         $limits = $wedding->limits();
@@ -89,9 +94,12 @@ final class GuestMediaController extends GuestApiController
         $challengeId = $request->query->getString('aufgabe');
         if (Uuid::isValid($challengeId)) {
             $challenge = $challenges->find(Uuid::fromString($challengeId));
-            // Bei der Umfrage lädt man nichts hoch – sie hat ihre eigene Seite.
-            if (null !== $challenge && $challenge->getWedding() === $wedding && $challenge->getMediaType()->isPoll()) {
-                return $this->redirectToRoute('guest_poll', ['slug' => $wedding->getSlug()]);
+            $detour =
+                null !== $challenge && $challenge->getWedding() === $wedding
+                    ? $rules->detour($guest, $challenge)
+                    : null;
+            if (null !== $detour) {
+                return $this->redirect($detour);
             }
 
             $now = DateTimeImmutable::createFromInterface($clock->now());

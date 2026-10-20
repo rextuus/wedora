@@ -35,13 +35,18 @@
         {% for c in challenges %}
             {% set cid = c.id.toRfc4122 %}
             {% set done = completed[cid] ?? false %}
-            <li class="challenge-item card{{ done ? ' is-done' : '' }}">
+            {% set buddy = buddyStatus[cid] ?? null %}
+            {% set paused = buddy == 'nobody_free' and not done %}
+            {# Noch nicht freigeschaltet (z. B. Last Drink „ab 23 Uhr“): ausgegraut, ohne Button. #}
+            {% set locked = not c.hasStartedAt(now) and not done %}
+            <li class="challenge-item card{{ done ? ' is-done' : '' }}{{ paused or locked ? ' is-paused' : '' }}">
                 <span class="challenge-item__motif">{{ deco.motif(challenge_motif(c.title), 64) }}</span>
                 <div class="card__head">
                     {% set isPoll = c.mediaType.isPoll() %}
                     {% set target = isPoll ? path('guest_poll', {slug: wedding.slug}) : path('guest_challenge', {slug: wedding.slug, id: cid}) %}
                     <h2><a href="{{ target }}">{{ c.title }}</a></h2>
                     {% if done %}<span class="status status--done">{{ ui.icon('check', 14) }} Erledigt</span>
+                    {% elseif paused and c.acceptsAt(now) %}<span class="status">{{ ui.icon('clock', 14) }} Gerade niemand frei</span>
                     {% elseif not c.hasStartedAt(now) %}<span class="status">{{ ui.icon('lock', 14) }} Ab {{ c.startsAt|date('H:i') }} Uhr</span>
                     {% elseif c.hasEndedAt(now) %}<span class="status">Beendet</span>
                     {% else %}<span class="status status--pending">Offen</span>{% endif %}
@@ -49,7 +54,11 @@
                 {% if c.description %}<p>{{ c.description }}</p>{% endif %}
                 <p class="muted">{{ c.mediaType.label }}{% if isPoll and poll and not done %} · {{ poll.answered }} von {{ poll.total }} {{ poll.total == 1 ? 'Frage' : 'Fragen' }} beantwortet{% endif %}{% if wedding.areChallengePointsEnabled() and c.points %} · {{ c.points }} Punkte{% endif %}{% if participants[cid] ?? 0 %} · {{ participants[cid] }} {{ participants[cid] == 1 ? 'Gast hat' : 'Gäste haben' }} mitgemacht{% endif %}</p>
                 {% if c.acceptsAt(now) %}
-                    {% if isPoll %}
+                    {% if paused %}
+                        {# Ausgegraut: kein Button, bis wieder jemand frei ist. #}
+                    {% elseif buddy %}
+                        <a class="button {{ done ? 'button--secondary' : 'button--primary' }}" href="{{ target }}">{{ done ? 'Noch ein Foto' : (buddy == 'needs_portrait' ? 'So geht’s' : 'Mitmachen') }}</a>
+                    {% elseif isPoll %}
                         <a class="button {{ done ? 'button--secondary' : 'button--primary' }}" href="{{ target }}">{{ done ? 'Antworten ansehen' : 'Mitmachen' }}</a>
                     {% else %}
                         <a class="button {{ done ? 'button--secondary' : 'button--primary' }}" href="{{ path('guest_upload', {slug: wedding.slug, aufgabe: cid}) }}">{{ done ? (is_drink(c) ? 'Video ersetzen' : 'Noch einen Beitrag') : 'Mitmachen' }}</a>

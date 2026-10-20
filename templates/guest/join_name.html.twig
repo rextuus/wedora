@@ -20,6 +20,8 @@
             <button type="submit" class="button button--primary button--block">Los geht’s</button>
         {{ form_end(form) }}
         {{ include('guest/_privacy_note.html.twig') }}
-        <p class="muted">Kein Konto nötig. Dein Zugang wird nur in diesem Browser gespeichert – wenn du Browserdaten löschst oder das Gerät wechselst, brauchst du den Link erneut.</p>
+        <p class="muted">Kein Konto nötig. Dein Zugang wird nur in diesem Browser gespeichert. Gleich bekommst du ein Codewort – damit kommst du wieder rein, falls du Browserdaten löschst oder das Gerät wechselst.</p>
     </section>
+
+    <p class="spaced center"><a class="text-link" href="{{ path('guest_recover', {slug: wedding.slug}) }}">Ich war schon dabei und habe ein Codewort</a></p>
 {% endblock %}

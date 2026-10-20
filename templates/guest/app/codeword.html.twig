@@ -1,0 +1,27 @@
+{% extends 'guest/app/_layout.html.twig' %}
+{% import 'components/icon.html.twig' as ui %}
+{% import 'components/ornament.html.twig' as deco %}
+
+{% block title %}Dein Codewort – {{ wedding.title }}{% endblock %}
+{% block section %}Codewort{% endblock %}
+
+{% block content %}
+    <header class="section-header section-header--motif">
+        <span class="section-header__motif">{{ deco.motif('key', 92) }}</span>
+        <p class="overline">Für den Notfall</p>
+        <h1 class="headline-lg">Dein <em>Codewort</em></h1>
+        <p class="lead">Mach am besten gleich einen Screenshot. Falls du später nicht mehr reinkommst (anderes Handy, Browserdaten gelöscht), brauchst du nur deinen Namen und dieses Codewort.</p>
+    </header>
+
+    <section class="card codeword-card" aria-label="Dein Codewort">
+        <p class="overline">{{ guest.displayName }}</p>
+        <p class="codeword">{{ codeword }}</p>
+        <p class="muted">Wieder rein: Beitrittslink öffnen → „Ich war schon dabei“.</p>
+    </section>
+
+    {% if next %}
+        <a class="button button--primary button--block" href="{{ next }}">Weiter {{ ui.icon('next', 18) }}</a>
+    {% else %}
+        <p class="spaced"><a class="text-link" href="{{ path('guest_album', {slug: wedding.slug}) }}">{{ ui.icon('back', 14) }} Zu meinem Album</a></p>
+    {% endif %}
+{% endblock %}

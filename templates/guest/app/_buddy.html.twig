@@ -1,0 +1,35 @@
+{% import 'components/icon.html.twig' as ui %}
+{#
+  „Foto mit gezeichnetem Gast“ auf der Aufgabenseite. Erwartet: challenge, wedding, guest, buddy {status, assignment, minutes}.
+#}
+{% set token = csrf_token('guest-action') %}
+{% if buddy.status == 'needs_portrait' %}
+    <p class="lead">Hier machst du ein Foto mit einem Gast von der Gästewand. Dafür zeigst du dein eigenes Porträt auch dort.</p>
+    <a class="button button--primary" href="{{ path(guest.hasPortrait() ? 'guest_wall' : 'guest_portrait', {slug: wedding.slug}) }}">{{ guest.hasPortrait() ? 'Zur Gästewand' : 'Erst zeichnen lassen' }}</a>
+{% elseif buddy.status == 'searching' and buddy.assignment %}
+    {% set partner = buddy.assignment.partner %}
+    {% set until = buddy.assignment.assignedAt|date_modify('+' ~ buddy.minutes ~ ' minutes') %}
+    <div class="buddy">
+        <span class="buddy__art">{{ include('guest/app/_portrait_art.html.twig', {who: partner}) }}</span>
+        <div>
+            <p class="overline">Such diese Person</p>
+            <p class="buddy__name">{{ partner.displayName }}</p>
+            <p class="muted">Findet euch und macht ein gemeinsames Foto – bis {{ until|date('H:i') }} Uhr.</p>
+        </div>
+    </div>
+    <div class="button-row">
+        <a class="button button--primary" href="{{ path('guest_upload', {slug: wedding.slug, aufgabe: challenge.id, kamera: 1}) }}">{{ ui.icon('camera', 18) }} Foto machen</a>
+        <form method="post" action="{{ path('guest_buddy_skip', {slug: wedding.slug, id: challenge.id}) }}">
+            <input type="hidden" name="_token" value="{{ token }}">
+            <button class="button button--secondary" type="submit">Jemand anderen</button>
+        </form>
+    </div>
+{% elseif buddy.status == 'nobody_free' %}
+    <p class="lead buddy--paused">{{ ui.icon('clock', 18) }} Gerade ist niemand frei – schau später wieder vorbei.</p>
+    <p class="muted">Damit niemand überrannt wird, macht jeder Gast nur ein paar Fotos und hat dazwischen eine Pause.</p>
+{% else %}
+    <form method="post" action="{{ path('guest_buddy_assign', {slug: wedding.slug, id: challenge.id}) }}">
+        <input type="hidden" name="_token" value="{{ token }}">
+        <button class="button button--primary" type="submit">{{ ui.icon('sparkle', 18) }} Wen soll ich suchen?</button>
+    </form>
+{% endif %}

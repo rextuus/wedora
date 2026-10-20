@@ -21,9 +21,9 @@ final class WelcomeTest extends WebTestCase
         $this->client->request('GET', "/h/{$wedding->getSlug()}/join?k={$wedding->access()->openLinkToken()}");
         $this->client->followRedirect();
         $this->client->submitForm('Los geht’s', ['display_name[displayName]' => 'Paula']);
-        self::assertResponseRedirects("/h/{$wedding->getSlug()}/willkommen");
-
-        $crawler = $this->client->followRedirect();
+        self::assertResponseRedirects("/h/{$wedding->getSlug()}/codewort?weiter=willkommen");
+        $this->client->followRedirect();
+        $crawler = $this->client->clickLink('Weiter');
         self::assertSelectorTextContains('.overline', 'Schön, dass du da bist, Paula');
         self::assertSelectorTextContains('h1', 'Deine erste Aufgabe');
         self::assertSelectorExists('.drink-explainer');
@@ -48,7 +48,7 @@ final class WelcomeTest extends WebTestCase
         $this->client->request('GET', "/h/{$wedding->getSlug()}/join?k={$wedding->access()->openLinkToken()}");
         $this->client->followRedirect();
         $this->client->submitForm('Los geht’s', ['display_name[displayName]' => 'Paula']);
-        self::assertResponseRedirects("/h/{$wedding->getSlug()}");
+        self::assertResponseRedirects("/h/{$wedding->getSlug()}/codewort?weiter=start");
 
         $this->client->request('GET', "/h/{$wedding->getSlug()}/willkommen");
         self::assertResponseRedirects("/h/{$wedding->getSlug()}");

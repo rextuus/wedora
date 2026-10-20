@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Media\Controller;
 
+use App\Challenge\ChallengeUploadRules;
 use App\Challenge\DrinkVideoReplacement;
+use App\Challenge\PortraitBuddy;
 use App\Challenge\Repository\ChallengeRepository;
 use App\Media\Entity\Media;
 use App\Media\Entity\Upload;
@@ -45,7 +47,7 @@ final class UploadController extends GuestApiController
     ) {}
 
     #[Route('', name: 'api_upload_start', methods: ['POST'])]
-    public function start(Request $request): JsonResponse
+    public function start(Request $request, ChallengeUploadRules $rules): JsonResponse
     {
         $guest = $this->guest($request);
         $parsed = self::parseStart($request);
@@ -60,6 +62,12 @@ final class UploadController extends GuestApiController
                 : null;
             if (null === $challenge || $challenge->getWedding() !== $guest->getWedding()) {
                 return self::error('Aufgabe nicht gefunden.', Response::HTTP_NOT_FOUND);
+            }
+
+            // z. B. „Foto mit gezeichnetem Gast“ nur mit zugelostem Partner – sonst ließen sich die Regeln umgehen.
+            $rejection = $rules->rejection($guest, $challenge);
+            if (null !== $rejection) {
+                return self::error($rejection, Response::HTTP_CONFLICT);
             }
         }
 
@@ -95,8 +103,12 @@ final class UploadController extends GuestApiController
     }
 
     #[Route('/{id}', name: 'api_upload_append', methods: ['PATCH'])]
-    public function append(Request $request, string $id, DrinkVideoReplacement $drinkVideos): Response
-    {
+    public function append(
+        Request $request,
+        string $id,
+        DrinkVideoReplacement $drinkVideos,
+        PortraitBuddy $buddies,
+    ): Response {
         $upload = $this->ownUpload($request, $id);
         $offset = $request->headers->get('Upload-Offset');
         if (null === $offset || !ctype_digit($offset)) {
@@ -128,6 +140,8 @@ final class UploadController extends GuestApiController
 
         // First/Last Drink: Das neue Video ersetzt das bisherige – erst jetzt, da es vollständig angekommen ist.
         $drinkVideos->replacePrevious($media);
+        // „Foto mit gezeichnetem Gast“: hakt die offene Zulosung ab.
+        $buddies->complete($media);
 
         $data = self::describe($media);
         $data['estimatedSeconds'] = $this->forecast->remainingSeconds($media);

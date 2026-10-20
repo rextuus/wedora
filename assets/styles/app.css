@@ -416,6 +416,15 @@ body.has-lightbox { overflow: hidden; }
 .challenge-item .card__head { flex-direction: column; align-items: flex-start; gap: .4rem; }
 .challenge-item h2 a { text-decoration: none; }
 .challenge-item .button { justify-self: start; margin-top: .5rem; }
+.challenge-item.is-paused { opacity: .6; }
+.challenge-item.is-paused .challenge-item__motif { filter: grayscale(1); }
+/* „Foto mit gezeichnetem Gast“: zugeloster Partner */
+.buddy { display: flex; align-items: center; gap: 1rem; }
+.buddy__art { display: grid; place-items: center; flex: none; width: 96px; height: 96px; border-radius: 50%; background: var(--bg-input); overflow: hidden; }
+.buddy__art > .portrait-art { grid-area: 1 / 1; width: 88%; height: 88%; }
+.buddy__art > img.portrait-art--color { width: 100%; height: 100%; }
+.buddy__name { margin: .1rem 0; font-family: var(--font-serif); font-size: 1.5rem; }
+.buddy--paused { display: flex; align-items: center; gap: .5rem; }
 .ranking { list-style: none; margin: 0; padding: 0; counter-reset: rank; }
 .ranking li { display: flex; gap: 1rem; align-items: baseline; padding: .6rem 0; border-bottom: 1px solid var(--line); }
 .ranking li::before { counter-increment: rank; content: counter(rank); font-family: var(--font-serif); font-style: italic; color: var(--text-faint); width: 1.5rem; }
@@ -556,9 +565,10 @@ details.card[open] > summary { margin-bottom: 1rem; }
 .portrait-zoom { position: relative; width: min(28rem, calc(100vw - 2rem)); margin: auto; padding: 1.5rem; border: 1px solid var(--line); align-items: center; text-align: center; color: var(--text); }
 .portrait-zoom:not([open]) { display: none; }
 .portrait-zoom::backdrop { background: rgba(27, 28, 26, .55); }
-.portrait-zoom__art { display: grid; place-items: center; width: 100%; aspect-ratio: 1; border-radius: 50%; background: var(--bg-input); }
-.portrait-zoom__art > .portrait-art { grid-area: 1 / 1; width: 88%; height: 88%; }
-.portrait-zoom__art > img.portrait-art--color { width: 100%; height: 100%; }
+/* Im Popup das ganze, eckige Bild (auf der Wand rund zugeschnitten). */
+.portrait-zoom__art { display: grid; place-items: center; width: 100%; aspect-ratio: 1; border-radius: var(--radius-md); background: var(--bg-input); overflow: hidden; }
+.portrait-zoom__art > .portrait-art { grid-area: 1 / 1; width: 94%; height: 94%; }
+.portrait-zoom__art > img.portrait-art--color { width: 100%; height: 100%; border-radius: 0; }
 .portrait-zoom__name { margin: 0; font-family: var(--font-serif); font-size: 1.5rem; }
 .portrait-zoom__close { position: absolute; top: .5rem; right: .5rem; display: grid; place-items: center; width: var(--tap); height: var(--tap); border: 0; border-radius: 50%; background: none; color: var(--text-muted); cursor: pointer; }
 .wall__art { display: grid; place-items: center; width: 100%; max-width: 9rem; aspect-ratio: 1; border-radius: 50%; background: var(--bg-input); }
@@ -722,3 +732,11 @@ a.drink-explainer__step:hover .drink-explainer__go { text-decoration: underline;
 .qr-pair { display: flex; flex-wrap: wrap; gap: 1.5rem; }
 .qr-pair__item { margin: 0; display: flex; flex-direction: column; gap: .5rem; max-width: 240px; }
 .qr-pair__item figcaption { display: flex; flex-direction: column; gap: .35rem; align-items: flex-start; }
+
+/* Codewort zum Wiederreinkommen */
+.codeword-card { align-items: center; text-align: center; }
+.codeword { margin: 0; font-family: var(--font-serif); font-size: clamp(2.5rem, 12vw, 3.5rem); line-height: 1.1; letter-spacing: .02em; color: var(--accent-strong); }
+.codeword-choices { display: grid; gap: .6rem; }
+.codeword-choices form { margin: 0; }
+.codeword-choice { font-family: var(--font-serif); font-size: 1.25rem; }
+.center { text-align: center; }

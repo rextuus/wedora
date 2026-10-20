@@ -32,6 +32,8 @@
         <p class="muted">„Wartet“: erscheint nach der Freigabe · „Privat“: nur für dich · „Brautpaar“: nur für das Brautpaar</p>
     {% endif %}
 
+    <p class="spaced"><a class="text-link" href="{{ path('guest_codeword', {slug: wedding.slug}) }}">{{ ui.icon('key', 14) }} Mein Codewort zum Wiederreinkommen</a></p>
+
     {% if challenges is not empty %}
         <section>
             <h2 class="overline">{{ ui.icon('sparkle', 15) }} Deine Aufgaben</h2>

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Guest\Controller;
 
 use App\Challenge\WelcomeMission;
+use App\Guest\Codeword;
 use App\Guest\Entity\Guest;
 use App\Guest\Form\DisplayNameType;
 use App\Guest\Form\WeddingPasswordType;
@@ -160,7 +161,7 @@ final class JoinController extends AbstractController
             'POST',
         ],
     )]
-    public function name(string $slug, Request $request): Response
+    public function name(string $slug, Request $request, Codeword $codewords): Response
     {
         $wedding = $this->activeWedding($slug);
         $readiness = $this->flow->readiness($wedding);
@@ -175,20 +176,18 @@ final class JoinController extends AbstractController
             /** @var array{displayName: string} $data */
             $data = $form->getData();
             [$guest, $secret] = Guest::join($wedding, $data['displayName'], $readiness['invitation']);
+            $guest->assignCodeword($codewords->unused($wedding));
             $this->em->persist($guest);
             $this->em->flush();
             $this->flow->clear($wedding);
 
-            // Nach dem Namen direkt zur ersten Aufgabe (First Drink); ohne sie das Porträt-Angebot, sonst Startseite.
-            $response = match (true) {
-                null !== $this->welcomeMission->firstDrink($wedding, $this->now())
-                    => $this->redirectToRoute('guest_welcome', ['slug' => $slug]),
-                $this->portraits->isOfferedTo($wedding) => $this->redirectToRoute('guest_portrait', [
-                    'slug' => $slug,
-                    'willkommen' => 1,
-                ]),
-                default => $this->redirectToRoute('guest_home', ['slug' => $slug]),
+            // Erst das Codewort zeigen, dann zur ersten Aufgabe (First Drink); ohne sie das Porträt-Angebot, sonst Startseite.
+            $next = match (true) {
+                null !== $this->welcomeMission->firstDrink($wedding, $this->now()) => 'willkommen',
+                $this->portraits->isOfferedTo($wedding) => 'portraet',
+                default => 'start',
             };
+            $response = $this->redirectToRoute('guest_codeword', ['slug' => $slug, 'weiter' => $next]);
             $response->headers->setCookie(GuestCookie::create($guest, $secret, $request));
 
             return $response;

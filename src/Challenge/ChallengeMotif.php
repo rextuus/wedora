@@ -14,8 +14,11 @@ final class ChallengeMotif
     /** @var array<string, list<string>> Motiv => Stichwörter (klein geschrieben) */
     private const array KEYWORDS = [
         'moon' => ['last drink', 'letzte', 'absacker', 'mitternacht'],
+        // Vor „glasses“, damit „Ein Drink für Wolfgang“ nicht als First Drink gilt.
+        'bottle' => ['drink für', 'drink aus', 'spendier', 'ausgeben'],
         'glasses' => ['drink', 'anstoßen', 'sekt', 'champagner', 'prost', 'toast', 'glas'],
         'balloons' => ['wer von beiden', 'umfrage'],
+        'pencil' => ['gezeichnet', 'porträt'],
         'couple' => ['first dance', 'erster tanz', 'hochzeitstanz', 'brautpaar tanzt'],
         'dance' => ['dancefloor', 'tanz', 'dance', 'party', 'disco'],
         'hands' => ['friend', 'freund', 'kennengelernt', 'selfie', 'gruppe'],

@@ -33,6 +33,16 @@ final readonly class CoupleNames
         return new self('Person 1', 'Person 2');
     }
 
+    /** „L & T“ – null, wenn der Titel keine zwei Namen hergab (Platzhalter). */
+    public function initials(): ?string
+    {
+        if ('Person 1' === $this->first && 'Person 2' === $this->second) {
+            return null;
+        }
+
+        return mb_strtoupper(mb_substr($this->first, 0, 1)) . ' & ' . mb_strtoupper(mb_substr($this->second, 0, 1));
+    }
+
     public function name(PollChoice $choice): string
     {
         return PollChoice::First === $choice ? $this->first : $this->second;

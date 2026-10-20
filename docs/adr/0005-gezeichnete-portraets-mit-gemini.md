@@ -51,6 +51,7 @@ Dafür verlässt ein Gesichtsfoto den eigenen Server. Das ist die erste Stelle, 
 - Ohne gültige Antwort lehnt der Server ab. Das passiert, bevor das Tageslimit zählt und bevor etwas an Gemini geht.
 - Die Antwort wird am Gast gespeichert (`portrait_answer`). Den Gästen wird **nicht** gesagt, dass sie das Accessoire bestimmt; sie sehen nur „Überraschung: mit Krone“.
 - Sind die Accessoires ausgeschaltet, gibt es keine Frage.
+- **Herz-Tattoo (20.10.2026):** Neues Accessoire, ein kleines Herz-Tattoo auf der Wange mit den Initialen des Paares aus dem Hochzeitstitel (z. B. „L & T“). Es gehört zur Antwort „Beide gleich lang“. Nur dafür erlaubt der Prompt Buchstaben im Bild; ohne zwei erkennbare Namen bleibt das Herz leer und es gilt weiter „kein Text“.
 
 ## Ergänzung: Kostenbremse und hängende Aufträge (20.10.2026)
 

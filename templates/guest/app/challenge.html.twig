@@ -36,7 +36,9 @@
             <p class="overline">{{ challenge.mediaType.label }}{% if wedding.areChallengePointsEnabled() and challenge.points %} · {{ challenge.points }} Punkte{% endif %}</p>
             {% if done %}<span class="status status--done">{{ ui.icon('check', 14) }} Erledigt</span>{% endif %}
         </div>
-        {% if challenge.acceptsAt(now) %}
+        {% if challenge.acceptsAt(now) and buddy %}
+            {{ include('guest/app/_buddy.html.twig') }}
+        {% elseif challenge.acceptsAt(now) %}
             <a class="button button--primary" href="{{ path('guest_upload', {slug: wedding.slug, aufgabe: challenge.id}|merge(challenge_motif(challenge.title) in ['glasses', 'moon'] ? {kamera: 'selfie'} : {})) }}">{{ ui.icon('camera', 18) }} {{ done ? (is_drink(challenge) ? 'Video ersetzen' : 'Noch einen Beitrag') : 'Jetzt mitmachen' }}</a>
             {% if done and is_drink(challenge) %}<p class="muted">Jeder dreht dieses Video nur einmal. Ein neues ersetzt dein bisheriges.</p>{% endif %}
         {% elseif not challenge.hasStartedAt(now) %}

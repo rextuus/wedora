@@ -24,6 +24,7 @@ use Symfony\Component\Uid\Uuid;
  */
 #[ORM\Entity(repositoryClass: GuestRepository::class)]
 #[ORM\Table(name: 'guest')]
+#[ORM\UniqueConstraint(name: 'uniq_guest_codeword', columns: ['wedding_id', 'codeword'])]
 class Guest
 {
     public const int DISPLAY_NAME_MAX = 40;
@@ -43,6 +44,10 @@ class Guest
 
     #[ORM\Column(length: self::DISPLAY_NAME_MAX)]
     private string $displayName;
+
+    /** Merkbares Codewort (z. B. „Kuchen13“) zum Wiederherstellen des Zugangs; lesbar, gilt nur mit dem Namen. */
+    #[ORM\Column(length: 24, nullable: true)]
+    private ?string $codeword = null;
 
     /** Gezeichnetes Porträt aus einem Selfie (optional, nur mit Einwilligung). */
     #[ORM\Column(length: 16, nullable: true, enumType: PortraitStatus::class)]
@@ -149,6 +154,25 @@ class Guest
     public function matchesSecret(#[SensitiveParameter] string $secret): bool
     {
         return hash_equals($this->secretHash, self::hashSecret($secret));
+    }
+
+    /** Neues Geheimnis (z. B. nach Wiederherstellung per Codewort); ältere Geräte sind danach abgemeldet. */
+    public function rotateSecret(): string
+    {
+        $secret = rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
+        $this->secretHash = self::hashSecret($secret);
+
+        return $secret;
+    }
+
+    public function getCodeword(): ?string
+    {
+        return $this->codeword;
+    }
+
+    public function assignCodeword(string $codeword): void
+    {
+        $this->codeword = $codeword;
     }
 
     public function block(DateTimeImmutable $at): void

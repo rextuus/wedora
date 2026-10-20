@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Guest\Portrait;
 
+use App\Wedding\CoupleNames;
+
 /**
  * Zeichenstile für Gästeporträts. „Feine Linien“ wird transparent gespeichert und per CSS in der
  * Akzentfarbe eingefärbt; die übrigen Stile sind farbige Bilder und erscheinen rund zugeschnitten.
@@ -35,13 +37,17 @@ enum PortraitStyle: string
         };
     }
 
-    public function prompt(?PortraitGadget $gadget = null): string
+    public function prompt(?PortraitGadget $gadget = null, ?CoupleNames $names = null): string
     {
         $accessory = null === $gadget
             ? ''
             : ' Add one playful accessory, drawn in exactly the same style as the portrait: the person is '
-            . $gadget->prompt()
+            . $gadget->prompt($names)
             . '.';
+        // Sonst gar kein Text – außer den Initialen im Herz-Tattoo.
+        $never = true === $gadget?->hasLetters($names)
+            ? ' No other text or letters apart from the initials in the tattoo, no frame, no watermark.'
+            : self::NEVER;
 
         return (
             self::SUBJECT . match ($this) {
@@ -61,7 +67,7 @@ enum PortraitStyle: string
                 . 'plain background.',
             }
             . $accessory
-            . self::NEVER
+            . $never
         );
     }
 

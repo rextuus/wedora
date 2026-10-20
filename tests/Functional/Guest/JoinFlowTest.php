@@ -28,7 +28,8 @@ final class JoinFlowTest extends WebTestCase
         self::assertSelectorTextContains('h1', 'Willkommen');
 
         $this->client->submitForm('Los geht’s', ['display_name[displayName]' => '  Sophie  ']);
-        self::assertResponseRedirects("/h/{$wedding->getSlug()}");
+        // Erst das Codewort zum Wiederreinkommen, dann weiter zur Startseite.
+        self::assertResponseRedirects("/h/{$wedding->getSlug()}/codewort?weiter=start");
 
         $cookie = $this->client->getCookieJar()->get(GuestCookie::NAME, GuestCookie::path($wedding->getSlug()));
         self::assertNotNull($cookie, 'Gast-Cookie muss auf den Pfad der Hochzeit beschränkt sein.');
@@ -36,6 +37,8 @@ final class JoinFlowTest extends WebTestCase
 
         $this->client->followRedirect();
         self::assertResponseIsSuccessful();
+        self::assertSelectorExists('.codeword');
+        $this->client->clickLink('Weiter');
         self::assertSelectorTextContains('h1', 'Hallo Sophie');
 
         $guest = self::service(GuestRepository::class)->findOneBy(['wedding' => $wedding]);
@@ -127,6 +130,7 @@ final class JoinFlowTest extends WebTestCase
         $this->client->followRedirect();
         $this->client->submitForm('Los geht’s', ['display_name[displayName]' => 'Oma Helga']);
         $this->client->followRedirect();
+        $this->client->clickLink('Weiter');
         self::assertSelectorTextContains('h1', 'Hallo Oma Helga');
 
         $guest = self::service(GuestRepository::class)->findOneBy(['wedding' => $wedding]);

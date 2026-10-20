@@ -10,6 +10,12 @@
         <div class="field"><label>Ab (optional)<input name="starts_at" type="datetime-local" value="{{ c and c.startsAt ? c.startsAt|date('Y-m-d\\TH:i') : '' }}"></label></div>
         <div class="field"><label>Bis (optional)<input name="ends_at" type="datetime-local" value="{{ c and c.endsAt ? c.endsAt|date('Y-m-d\\TH:i') : '' }}"></label></div>
     </div>
+    {% if not c or c.mediaType.isBuddy() %}
+        <div class="form-grid">
+            <div class="field"><label>Fotos je Gast <span class="muted">(nur „Foto mit gezeichnetem Gast“)</span><input name="buddy_limit" type="number" min="1" max="50" value="{{ c ? c.buddyLimit : 3 }}"></label></div>
+            <div class="field"><label>Pause danach in Minuten <span class="muted">(nur „Foto mit gezeichnetem Gast“)</span><input name="buddy_pause" type="number" min="0" max="600" value="{{ c ? c.buddyPauseMinutes : 30 }}"></label></div>
+        </div>
+    {% endif %}
     <label class="toggle"><input type="checkbox" name="enabled"{% if not c or c.enabled %} checked{% endif %}> Für Gäste sichtbar</label>
 {% endmacro %}
 

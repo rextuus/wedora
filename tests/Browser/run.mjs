@@ -44,7 +44,7 @@ async function joinAsGuest(name, device = 'iPhone 14') {
     await context.close();
 
     const { context: guest, page: p } = await joinAsGuest('Prüfgast');
-    for (const [name, path] of [['Start', ''], ['Galerie', '/galerie'], ['Aufgaben', '/aufgaben'], ['Wer von beiden?', '/wer-von-beiden'], ['Gästebuch', '/gaestebuch'], ['Mein Album', '/album'], ['Upload', '/upload'], ['Porträt', '/portraet'], ['Privatsphäre', '/privatsphaere'], ['Willkommen', '/willkommen'], ['Vorher – nachher', '/aufgaben/vorher-nachher']]) {
+    for (const [name, path] of [['Start', ''], ['Galerie', '/galerie'], ['Aufgaben', '/aufgaben'], ['Wer von beiden?', '/wer-von-beiden'], ['Gästebuch', '/gaestebuch'], ['Mein Album', '/album'], ['Upload', '/upload'], ['Porträt', '/portraet'], ['Privatsphäre', '/privatsphaere'], ['Willkommen', '/willkommen'], ['Vorher – nachher', '/aufgaben/vorher-nachher'], ['Codewort', '/codewort'], ['Gästewand', '/gaeste']]) {
         const response = await p.goto(base + slugPath + path, { waitUntil: 'networkidle' });
         if (response.url().endsWith(slugPath) && path !== '') {
             console.log(`– ${name} (nicht verfügbar, übersprungen)`);

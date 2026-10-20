@@ -41,6 +41,8 @@ export default class extends Controller {
 
     close() {
         this.dialogTarget.close();
+        // Sofort aufräumen; das „close“-Ereignis (Escape, Tippen daneben) kommt einen Moment später.
+        this.closed();
     }
 
     /** Hinweis gelesen: Figur weg, Zeit von vorn, eine Stunde Ruhe. */

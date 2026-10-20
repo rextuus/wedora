@@ -51,7 +51,7 @@ final class PortraitQuestions
                 'answers' => [
                     'first' => ['label' => $names->first, 'gadget' => PortraitGadget::FlowerCrown],
                     'second' => ['label' => $names->second, 'gadget' => PortraitGadget::TopHat],
-                    'both' => ['label' => 'Beide gleich lang', 'gadget' => PortraitGadget::HeartGlasses],
+                    'both' => ['label' => 'Beide gleich lang', 'gadget' => PortraitGadget::HeartTattoo],
                 ],
             ],
             'since' => [

@@ -77,7 +77,7 @@
         <ul class="row-list">
             {% for g in guests %}
                 <li>
-                    <span><strong>{{ g.displayName }}</strong> <span class="muted">{{ g.joinMethod.value == 'invitation' ? 'Einladung „' ~ (g.invitation.label ?? '–') ~ '“' : 'QR-Code' }} · {{ g.createdAt|date('d.m. H:i') }}{% if g.blocked %} · gesperrt{% endif %}{% if g.invitation and g.invitation.revoked %} · Einladung widerrufen{% endif %}</span></span>
+                    <span><strong>{{ g.displayName }}</strong> <span class="muted">{{ g.joinMethod.value == 'invitation' ? 'Einladung „' ~ (g.invitation.label ?? '–') ~ '“' : 'QR-Code' }} · {{ g.createdAt|date('d.m. H:i') }}{% if g.codeword %} · Codewort <strong class="codeword-inline">{{ g.codeword }}</strong>{% endif %}{% if g.blocked %} · gesperrt{% endif %}{% if g.invitation and g.invitation.revoked %} · Einladung widerrufen{% endif %}</span></span>
                     <form method="post" action="{{ path('admin_guest_block', {slug: wedding.slug, id: g.id, action: g.blocked ? 'entsperren' : 'sperren'}) }}">{{ include('admin/_csrf.html.twig') }}<button class="link-button" type="submit">{{ g.blocked ? 'Entsperren' : 'Sperren' }}</button></form>
                 </li>
             {% endfor %}

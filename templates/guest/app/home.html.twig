@@ -91,7 +91,9 @@
                     {% if activeChallenge.description %}<p class="lead">{{ activeChallenge.description }}</p>{% endif %}
                     {% set n = participants[aid] ?? 0 %}
                     <p class="participation">{{ ui.icon('users', 18) }} {% if n %}<span><strong>{{ n }}</strong> {{ n == 1 ? 'Gast hat' : 'Gäste haben' }} schon mitgemacht</span>{% else %}<span>Noch niemand dabei – sei der oder die Erste!</span>{% endif %}</p>
-                    {% if activeChallenge.mediaType.isPoll() %}
+                    {% if activeChallenge.mediaType.isBuddy() %}
+                        <a class="button button--primary" href="{{ path('guest_challenge', {slug: wedding.slug, id: aid}) }}">{{ ui.icon('sparkle', 18) }} Mitmachen</a>
+                    {% elseif activeChallenge.mediaType.isPoll() %}
                         <a class="button button--primary" href="{{ path('guest_poll', {slug: wedding.slug}) }}">{{ ui.icon('sparkle', 18) }} Abstimmen</a>
                     {% else %}
                         <a class="button button--primary" href="{{ path('guest_upload', {slug: wedding.slug, aufgabe: aid}) }}">{{ ui.icon('camera', 18) }} {{ activeChallenge.mediaType.value == 'video' ? 'Video drehen' : 'Mitmachen' }}</a>

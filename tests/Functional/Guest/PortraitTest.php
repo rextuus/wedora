@@ -40,8 +40,10 @@ final class PortraitTest extends WebTestCase
         $this->client->request('GET', "/h/{$enabled->getSlug()}/join?k={$enabled->access()->openLinkToken()}");
         $this->client->followRedirect();
         $this->client->submitForm('Los geht’s', ['display_name[displayName]' => 'Sophie']);
-        self::assertResponseRedirects("/h/{$enabled->getSlug()}/portraet?willkommen=1");
+        self::assertResponseRedirects("/h/{$enabled->getSlug()}/codewort?weiter=portraet");
         $this->client->followRedirect();
+        self::assertSelectorExists('a.button[href="/h/' . $enabled->getSlug() . '/portraet?willkommen=1"]');
+        $this->client->clickLink('Weiter');
         self::assertSelectorTextContains('.overline', 'Willkommen, Sophie');
         self::assertSelectorTextContains('main', 'Überspringen');
 
@@ -49,7 +51,7 @@ final class PortraitTest extends WebTestCase
         $this->client->request('GET', "/h/{$disabled->getSlug()}/join?k={$disabled->access()->openLinkToken()}");
         $this->client->followRedirect();
         $this->client->submitForm('Los geht’s', ['display_name[displayName]' => 'Paul']);
-        self::assertResponseRedirects("/h/{$disabled->getSlug()}");
+        self::assertResponseRedirects("/h/{$disabled->getSlug()}/codewort?weiter=start");
 
         [$guest, $secret] = $this->fixtures->guest(self::fresh($disabled));
         $this->actAsGuest($guest, $secret);

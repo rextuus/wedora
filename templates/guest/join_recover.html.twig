@@ -1,0 +1,42 @@
+{% extends 'guest/_layout.html.twig' %}
+
+{% block title %}Wieder reinkommen – {{ wedding.title }}{% endblock %}
+
+{% import 'components/ornament.html.twig' as deco %}
+
+{% block content %}
+    <header class="page-header page-header--motif">
+        <span class="page-header__motif">{{ deco.motif('key', 96) }}</span>
+        {% include 'guest/_wedding_badge.html.twig' %}
+        <h1 class="display">Willkommen zurück</h1>
+        <p class="tagline">Mit deinem Namen und deinem Codewort</p>
+    </header>
+
+    {% if error %}<p class="notice notice--error" role="alert">{{ error }}</p>{% endif %}
+
+    <section class="card stack" aria-labelledby="recover-title">
+        {% if choices is empty %}
+            <h2 id="recover-title" class="headline">Wie heißt du hier?</h2>
+            <form method="get" class="stack">
+                <div class="field"><label for="recover-name">Dein Name, genau wie beim Beitritt</label><input id="recover-name" name="name" value="{{ name }}" maxlength="40" required autocomplete="off"></div>
+                <button type="submit" class="button button--primary button--block">Weiter</button>
+            </form>
+        {% else %}
+            <h2 id="recover-title" class="headline">Welches ist dein Codewort, {{ name }}?</h2>
+            <p class="muted">Du hast es beim ersten Mal bekommen (z. B. als Screenshot). Du hast einen Versuch – danach geht es erst in 15 Minuten weiter.</p>
+            <div class="codeword-choices">
+                {% for choice in choices %}
+                    <form method="post">
+                        <input type="hidden" name="_token" value="{{ csrf_token('guest-recover') }}">
+                        <input type="hidden" name="name" value="{{ name }}">
+                        <input type="hidden" name="codewort" value="{{ choice }}">
+                        <button type="submit" class="button button--secondary button--block codeword-choice">{{ choice }}</button>
+                    </form>
+                {% endfor %}
+            </div>
+        {% endif %}
+        <p class="muted">Codewort vergessen? Das Brautpaar kann es in der Verwaltung nachsehen.</p>
+    </section>
+
+    <p class="spaced center"><a class="text-link" href="{{ path('guest_join_name', {slug: wedding.slug}) }}">Ich bin neu hier</a></p>
+{% endblock %}

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Challenge;
 
+use App\Wedding\Entity\Wedding;
+use App\Wedding\Host\HostPronoun;
+
 /**
  * Vorschläge aus dem Konzept; die Hochzeitsadministration kann sie übernehmen und anpassen.
  */
@@ -53,6 +56,12 @@ final class ChallengeTemplates
                 'type' => ChallengeMediaType::Poll,
                 'points' => 10,
             ],
+            'portrait-buddy' => [
+                'title' => 'Foto mit einem gezeichneten Gast',
+                'description' => 'Die App lost dir jemanden von der Gästewand zu – findet euch und macht ein gemeinsames Foto.',
+                'type' => ChallengeMediaType::Buddy,
+                'points' => 15,
+            ],
             'last-drink' => [
                 'title' => 'Last Drink',
                 'description' =>
@@ -61,6 +70,44 @@ final class ChallengeTemplates
                 'type' => ChallengeMediaType::Video,
                 'points' => 15,
             ],
+            // Scherzaufgabe; Name und „seine/ihre“ kommen aus dem Gastgeber in den Einstellungen.
+            'host-drink' => [
+                'title' => 'Ein Drink für {gastgeber}',
+                'description' => 'Gib {gastgeber} einen Drink aus – für {seine} „super“ Arbeit an dieser App. Beweisfoto mit Drink!',
+                'type' => ChallengeMediaType::Photo,
+                'points' => 5,
+            ],
         ];
+    }
+
+    /**
+     * Vorschläge für eine Hochzeit: Platzhalter ersetzt; die Gastgeber-Aufgabe nur, wenn ein Gastgeber eingetragen ist.
+     *
+     * @return array<string, array{title: string, description: string, type: ChallengeMediaType, points: int}>
+     */
+    public static function forWedding(Wedding $wedding): array
+    {
+        $host = $wedding->getPresentation()->getHostName();
+        $templates = self::all();
+        if (null === $host) {
+            unset($templates['host-drink']);
+
+            return $templates;
+        }
+
+        $replace = [
+            '{gastgeber}' => $host,
+            '{seine}' => match ($wedding->getPresentation()->getHostPronoun()) {
+                HostPronoun::He => 'seine',
+                HostPronoun::She => 'ihre',
+                null => 'die',
+            },
+        ];
+
+        return array_map(static fn(array $t): array => [
+            ...$t,
+            'title' => strtr($t['title'], $replace),
+            'description' => strtr($t['description'], $replace),
+        ], $templates);
     }
 }

@@ -41,7 +41,7 @@ final class ChallengeAdminController extends AdminController
             'challenges' => $list,
             'participants' => $progress->participants($list),
             'templates' => array_filter(
-                ChallengeTemplates::all(),
+                ChallengeTemplates::forWedding($wedding),
                 static fn(array $t): bool => !in_array($t['title'], $existing, true),
             ),
             'types' => ChallengeMediaType::cases(),
@@ -53,7 +53,7 @@ final class ChallengeAdminController extends AdminController
     {
         $wedding = $this->wedding($slug, WeddingPermission::Configure);
         $this->requireCsrf($request);
-        $template = ChallengeTemplates::all()[$request->request->getString('template')] ?? null;
+        $template = ChallengeTemplates::forWedding($wedding)[$request->request->getString('template')] ?? null;
 
         try {
             $challenge = new Challenge($wedding, $template['title'] ?? $request->request->getString('title'));
@@ -61,6 +61,11 @@ final class ChallengeAdminController extends AdminController
                 $challenge->describe($template['description']);
                 $challenge->setMediaType($template['type']);
                 $challenge->setPoints($template['points']);
+                // Last Drink erst spät am Abend: am Hochzeitstag ab 23 Uhr (änderbar unter „Ab“).
+                $date = $wedding->getWeddingDate();
+                if ('last-drink' === $request->request->getString('template') && null !== $date) {
+                    $challenge->schedule($date->setTime(23, 0), null);
+                }
             } else {
                 $this->apply($challenge, $request);
             }
@@ -129,6 +134,12 @@ final class ChallengeAdminController extends AdminController
         );
         $challenge->setPoints($request->request->getInt('points'));
         $challenge->setEnabled($request->request->has('enabled'));
+        if ($request->request->has('buddy_limit')) {
+            $challenge->setBuddyRules(
+                $request->request->getInt('buddy_limit'),
+                $request->request->getInt('buddy_pause'),
+            );
+        }
         $starts = $request->request->getString('starts_at');
         $ends = $request->request->getString('ends_at');
         $challenge->schedule(

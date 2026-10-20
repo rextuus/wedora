@@ -7,6 +7,7 @@ namespace App\Guest\Portrait;
 use App\Ai\ImageGenerator;
 use App\Ai\ImageInput;
 use App\Guest\Entity\Guest;
+use App\Wedding\CoupleNames;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Clock\ClockInterface;
@@ -49,10 +50,10 @@ final readonly class CreatePortraitHandler
             }
 
             $style = $guest->getPortraitStyle();
-            $drawing = $this->generator->generate($style->prompt($guest->getPortraitGadget()), [ImageInput::fromFile(
-                $selfie,
-                $mime,
-            )]);
+            $drawing = $this->generator->generate(
+                $style->prompt($guest->getPortraitGadget(), CoupleNames::of($guest->getWedding())),
+                [ImageInput::fromFile($selfie, $mime)],
+            );
             $this->renderer->render($drawing->bytes, $output, $style->isLineArt());
             $this->storage->savePortrait($guest, $output);
             $guest->portraitDrawn($this->now());

@@ -7,6 +7,7 @@ namespace App\Guest\Controller;
 use App\Challenge\ChallengeProgress;
 use App\Challenge\DrinkLock;
 use App\Challenge\Entity\Challenge;
+use App\Challenge\PortraitBuddy;
 use App\Challenge\Repository\ChallengeRepository;
 use App\Gallery\GalleryFilter;
 use App\Gallery\GalleryQuery;
@@ -158,13 +159,12 @@ final class GuestAppController extends AbstractController
     }
 
     #[Route('/aufgaben', name: 'guest_challenges', methods: ['GET'])]
-    public function challenges(): Response
+    public function challenges(PortraitBuddy $buddies): Response
     {
         $guest = $this->guest();
         $wedding = $guest->getWedding();
         $this->requireModule($wedding, ModuleType::Challenges);
         $challenges = $this->forGuests($wedding);
-
         return $this->page('guest/app/challenges.html.twig', $guest, 'challenges', [
             'challenges' => $challenges,
             'completed' => $this->progress->completedBy($guest, $challenges),
@@ -173,11 +173,12 @@ final class GuestAppController extends AbstractController
             'now' => $this->now(),
             'poll' => $this->poll->isVisibleIn($wedding) ? $this->poll->progressOf($guest) : null,
             'portraitOffered' => $this->portraits->isOfferedTo($wedding),
+            'buddyStatus' => $buddies->statuses($guest, $challenges),
         ]);
     }
 
     #[Route('/aufgaben/{id}', name: 'guest_challenge', methods: ['GET'])]
-    public function challenge(string $id): Response
+    public function challenge(string $id, PortraitBuddy $buddies): Response
     {
         $guest = $this->guest();
         $this->requireModule($guest->getWedding(), ModuleType::Challenges);
@@ -205,6 +206,7 @@ final class GuestAppController extends AbstractController
             'mine' => $mine,
             'contributions' => array_slice($contributions, 0, 24),
             'now' => $this->now(),
+            'buddy' => $buddies->view($guest, $challenge),
         ]);
     }
 
