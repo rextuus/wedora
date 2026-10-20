@@ -264,6 +264,12 @@ class Media implements Contribution
         $this->durationSeconds = $durationSeconds;
     }
 
+    /** Größe der abgeleiteten Dateien neu setzen (z. B. angeglichene Foto-Fassung erstellt oder entfernt). */
+    public function derivedChanged(int $bytes): void
+    {
+        $this->derivedBytes = max(0, $bytes);
+    }
+
     public function markReady(
         int $derivedBytes = 0,
         ?int $width = null,

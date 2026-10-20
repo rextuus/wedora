@@ -11,6 +11,7 @@ use App\Guestbook\Repository\GuestbookEntryRepository;
 use App\Media\Entity\Media;
 use App\Media\PublicationStatus;
 use App\Media\Visibility;
+use SortDirection;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 
 /**
@@ -35,10 +36,11 @@ final readonly class GuestbookFeed
         $entries = $this->entries
             ->createQueryBuilder('e')
             ->join('e.author', 'a')
+            ->addSelect('a')
             ->where('a.wedding = :wedding')
             ->andWhere('e.deletedAt IS NULL')
             ->andWhere('e.author = :guest OR (e.visibility = :allGuests AND e.publicationStatus = :published)')
-            ->orderBy('e.id', 'DESC')
+            ->orderBy('e.id', SortDirection::Descending)
             ->setMaxResults($limit)
             ->setParameter('wedding', $guest->getWedding()->getId(), UuidType::NAME)
             ->setParameter('guest', $guest->getId(), UuidType::NAME)

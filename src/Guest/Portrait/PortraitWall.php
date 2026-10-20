@@ -7,6 +7,7 @@ namespace App\Guest\Portrait;
 use App\Guest\Entity\Guest;
 use App\Wedding\Entity\Wedding;
 use Doctrine\ORM\EntityManagerInterface;
+use SortDirection;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 
 /**
@@ -57,7 +58,7 @@ final readonly class PortraitWall
             ->andWhere('g.portraitShared = true')
             ->andWhere('g.portraitStatus = :ready')
             ->andWhere('g.blockedAt IS NULL')
-            ->orderBy('g.displayName', 'ASC')
+            ->orderBy('g.displayName', SortDirection::Ascending)
             ->setParameter('wedding', $wedding->getId(), UuidType::NAME)
             ->setParameter('ready', PortraitStatus::Ready)
             ->getQuery()

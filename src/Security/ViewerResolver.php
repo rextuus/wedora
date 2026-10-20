@@ -12,14 +12,27 @@ use App\Guest\Repository\GuestRepository;
 use App\Security\Guest\GuestUser;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Uid\Uuid;
+use Symfony\Contracts\Service\ResetInterface;
 
-final readonly class ViewerResolver
+/**
+ * Konten-Rechte werden je Anfrage einmal geladen (jede Rechteprüfung fragt hier an) und danach verworfen
+ * (ResetInterface), damit Sperren und Widerrufe mit der nächsten Anfrage wirken – auch im Worker.
+ */
+final class ViewerResolver implements ResetInterface
 {
+    /** @var array<string, Viewer> */
+    private array $accounts = [];
+
     public function __construct(
-        private GuestRepository $guests,
-        private UserRepository $users,
-        private WeddingMemberRepository $members,
+        private readonly GuestRepository $guests,
+        private readonly UserRepository $users,
+        private readonly WeddingMemberRepository $members,
     ) {}
+
+    public function reset(): void
+    {
+        $this->accounts = [];
+    }
 
     public function fromSecurityUser(?UserInterface $user): Viewer
     {
@@ -64,6 +77,10 @@ final readonly class ViewerResolver
             return Viewer::anonymous();
         }
 
-        return Viewer::user($user->getId(), $user->isPlatformAdmin(), $this->members->permissionsByWedding($user));
+        return $this->accounts[$user->getId()->toRfc4122()] ??= Viewer::user(
+            $user->getId(),
+            $user->isPlatformAdmin(),
+            $this->members->permissionsByWedding($user),
+        );
     }
 }

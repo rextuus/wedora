@@ -14,6 +14,7 @@ use App\Media\Repository\MediaRepository;
 use App\Media\Visibility;
 use App\Wedding\ModuleType;
 use Doctrine\ORM\QueryBuilder;
+use SortDirection;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Uid\Uuid;
 
@@ -118,9 +119,13 @@ final readonly class GalleryQuery
     {
         $qb = $this->media
             ->createQueryBuilder('m')
+            // Kacheln zeigen Name/Avatar und ggf. die Aufgabe: gleich mitladen statt je Kachel nachzufragen.
+            ->leftJoin('m.uploaderGuest', 'g')
+            ->leftJoin('m.challenge', 'c')
+            ->addSelect('g', 'c')
             ->where('m.wedding = :wedding')
             ->andWhere('m.deletedAt IS NULL')
-            ->orderBy('m.id', 'DESC')
+            ->orderBy('m.id', SortDirection::Descending)
             ->setMaxResults($limit)
             ->setParameter('wedding', $guest->getWedding()->getId(), UuidType::NAME);
 

@@ -8,6 +8,7 @@ use App\Guest\Entity\Guest;
 use App\Media\Access\MediaAccessTokenSigner;
 use App\Media\Entity\Media;
 use App\Media\Image\ImgproxyUrlSigner;
+use App\Media\Image\PhotoEnhancer;
 use App\Media\MediaId;
 use App\Media\MediaType;
 use App\Media\Storage\LocalMediaStorage;
@@ -208,6 +209,39 @@ final class ProtectedMediaDeliveryTest extends IntegrationTestCase
         self::assertSame([], $this->storage->list($id), 'Original, Video und Standbild müssen entfernt sein.');
         self::assertSame(404, $this->get("/media/{$token}/video.mp4")['status']);
         self::assertSame(404, $this->get("/media/{$token}/image/thumb")['status']);
+    }
+
+    public function testEnhancedPhotoIsShownInsteadOfTheOriginalAndCanBeRemoved(): void
+    {
+        $image = $this->createImage();
+        $token = $this->grantAndIssue($image);
+        $before = $this->get("/media/{$token}/image/display");
+        self::assertSame(200, $before['status']);
+
+        $enhancer = new PhotoEnhancer(
+            $this->http,
+            new ImgproxyUrlSigner(self::env('IMGPROXY_KEY'), self::env('IMGPROXY_SALT')),
+            $this->storage,
+            'http://imgproxy:8080',
+        );
+        $bytes = $enhancer->enhance($image);
+        self::assertGreaterThan(0, $bytes);
+        $path = $this->storage->localPath($image, MediaFile::Enhanced);
+        self::assertSame('image/jpeg', mime_content_type($path));
+        self::assertFileExists($this->storage->localPath($image, MediaFile::Original), 'Original bleibt.');
+        self::assertSame([], glob(dirname($path) . '/*.part.jpg'), 'Keine Zwischendateien übrig.');
+
+        $after = $this->get("/media/{$token}/image/display");
+        self::assertSame(200, $after['status']);
+        self::assertNotSame(md5($before['body']), md5($after['body']), 'Angezeigt wird die angeglichene Fassung.');
+
+        $enhancer->remove($image);
+        self::assertFileDoesNotExist($path);
+        self::assertSame(
+            md5($before['body']),
+            md5($this->get("/media/{$token}/image/display")['body']),
+            'Wieder das Original.',
+        );
     }
 
     private function createVideo(): MediaId

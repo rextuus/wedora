@@ -12,6 +12,7 @@ use App\Media\ProcessingStatus;
 use App\Media\PublicationStatus;
 use App\Media\Repository\MediaRepository;
 use App\Media\Visibility;
+use SortDirection;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 
 /**
@@ -55,7 +56,7 @@ final readonly class DrinkComparison
             ->andWhere('m.type = :video')
             ->andWhere('m.deletedAt IS NULL')
             ->andWhere('m.publicationStatus != :rejected')
-            ->orderBy('m.id', 'DESC')
+            ->orderBy('m.id', SortDirection::Descending)
             ->setParameter('guest', $guest->getId(), UuidType::NAME)
             ->setParameter('challenges', [$pair[0]->getId()->toBinary(), $pair[1]->getId()->toBinary()])
             ->setParameter('video', MediaType::Video)
@@ -99,7 +100,7 @@ final readonly class DrinkComparison
             ->andWhere('m.visibility = :allGuests')
             ->andWhere('m.publicationStatus = :published')
             ->andWhere('m.processingStatus = :ready')
-            ->orderBy('m.id', 'DESC')
+            ->orderBy('m.id', SortDirection::Descending)
             ->setParameter('wedding', $guest->getWedding()->getId(), UuidType::NAME)
             ->setParameter('guest', $guest->getId(), UuidType::NAME)
             ->setParameter('challenges', [$pair[0]->getId()->toBinary(), $pair[1]->getId()->toBinary()])

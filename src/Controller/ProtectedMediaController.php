@@ -87,8 +87,14 @@ final readonly class ProtectedMediaController
     private function imageRedirect(MediaId $id, string $variant): ?string
     {
         $preset = ImagePreset::from(substr($variant, strlen('image/')));
-        // Bei Videos dient das Standbild als Bildquelle.
-        $source = $this->storage->exists($id, MediaFile::Poster) ? MediaFile::Poster : MediaFile::Original;
+        // Bei Videos dient das Standbild als Bildquelle; bei Fotos die angeglichene Fassung, falls vorhanden.
+        $source = MediaFile::Original;
+        foreach ([MediaFile::Poster, MediaFile::Enhanced] as $candidate) {
+            if ($this->storage->exists($id, $candidate)) {
+                $source = $candidate;
+                break;
+            }
+        }
 
         if (!$this->storage->exists($id, $source)) {
             return null;

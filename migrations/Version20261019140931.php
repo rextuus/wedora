@@ -32,4 +32,9 @@ final class Version20261019140931 extends AbstractMigration
         $this->addSql('ALTER TABLE guest DROP portrait_status, DROP portrait_updated_at');
         $this->addSql('ALTER TABLE wedding DROP portraits_enabled');
     }
+
+    public function isTransactional(): bool
+    {
+        return false;
+    }
 }

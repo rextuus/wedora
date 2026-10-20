@@ -27,3 +27,6 @@
 /docker/**/data/
 /backups/
 ###< wedora ###
+
+# Server-Anleitung mit Adressen und Pfaden – nur lokal
+/docs/deployment.md

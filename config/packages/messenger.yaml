@@ -30,6 +30,8 @@ framework:
             App\Media\Processing\ProcessVideo: async
             App\Media\Export\BuildExport: async
             App\Guest\Portrait\CreatePortrait: async
+            App\Media\Processing\EnhancePhoto: async
+            App\Media\Processing\EnhanceWeddingPhotos: async
 
 when@test:
     framework:

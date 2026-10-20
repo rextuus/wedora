@@ -5,14 +5,13 @@ declare(strict_types=1);
 namespace App\Media\Controller;
 
 use App\Challenge\ChallengeUploadRules;
-use App\Challenge\DrinkVideoReplacement;
-use App\Challenge\PortraitBuddy;
 use App\Challenge\Repository\ChallengeRepository;
 use App\Media\Entity\Media;
 use App\Media\Entity\Upload;
 use App\Media\MediaType;
 use App\Media\Processing\ProcessingForecast;
 use App\Media\Repository\UploadRepository;
+use App\Media\Upload\AfterUpload;
 use App\Media\Upload\UploadOffsetMismatch;
 use App\Media\Upload\UploadRejected;
 use App\Media\Upload\UploadRequest;
@@ -103,12 +102,8 @@ final class UploadController extends GuestApiController
     }
 
     #[Route('/{id}', name: 'api_upload_append', methods: ['PATCH'])]
-    public function append(
-        Request $request,
-        string $id,
-        DrinkVideoReplacement $drinkVideos,
-        PortraitBuddy $buddies,
-    ): Response {
+    public function append(Request $request, string $id, AfterUpload $afterUpload): Response
+    {
         $upload = $this->ownUpload($request, $id);
         $offset = $request->headers->get('Upload-Offset');
         if (null === $offset || !ctype_digit($offset)) {
@@ -138,10 +133,8 @@ final class UploadController extends GuestApiController
             ]);
         }
 
-        // First/Last Drink: Das neue Video ersetzt das bisherige – erst jetzt, da es vollständig angekommen ist.
-        $drinkVideos->replacePrevious($media);
-        // „Foto mit gezeichnetem Gast“: hakt die offene Zulosung ab.
-        $buddies->complete($media);
+        // Ersetzen (First/Last Drink), Zulosung abhaken, ggf. Foto angleichen – erst jetzt, da alles angekommen ist.
+        $afterUpload->handle($media);
 
         $data = self::describe($media);
         $data['estimatedSeconds'] = $this->forecast->remainingSeconds($media);

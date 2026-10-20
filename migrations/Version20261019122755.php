@@ -92,4 +92,9 @@ final class Version20261019122755 extends AbstractMigration
         $this->addSql('ALTER TABLE media_upload DROP caption, DROP challenge_id');
         $this->addSql('ALTER TABLE wedding DROP challenge_points_enabled');
     }
+
+    public function isTransactional(): bool
+    {
+        return false;
+    }
 }

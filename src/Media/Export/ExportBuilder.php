@@ -15,6 +15,7 @@ use App\Media\Visibility;
 use DateTimeImmutable;
 use Psr\Clock\ClockInterface;
 use RuntimeException;
+use SortDirection;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\String\Slugger\AsciiSlugger;
@@ -134,7 +135,7 @@ final readonly class ExportBuilder
             ->andWhere('m.deletedAt IS NULL')
             ->andWhere('m.visibility != :private')
             ->andWhere('m.publicationStatus != :rejected')
-            ->orderBy('m.createdAt', 'ASC')
+            ->orderBy('m.createdAt', SortDirection::Ascending)
             ->setParameter('wedding', $export->getWedding()->getId(), UuidType::NAME)
             ->setParameter('private', Visibility::UploaderOnly)
             ->setParameter('rejected', PublicationStatus::Rejected)

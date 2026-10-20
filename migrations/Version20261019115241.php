@@ -30,4 +30,9 @@ final class Version20261019115241 extends AbstractMigration
         // this down() migration is auto-generated, please modify it to your needs
         $this->addSql('DROP TABLE video_processing_record');
     }
+
+    public function isTransactional(): bool
+    {
+        return false;
+    }
 }

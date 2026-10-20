@@ -14,6 +14,7 @@ use App\Social\Entity\MediaReport;
 use App\Social\Repository\MediaReportRepository;
 use App\Wedding\Entity\Wedding;
 use App\Wedding\ModerationMode;
+use SortDirection;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 
 /**
@@ -63,7 +64,7 @@ final readonly class ModerationQueue
             ->where('m.wedding = :wedding')
             ->andWhere('r.resolvedAt IS NULL')
             ->andWhere('m.deletedAt IS NULL')
-            ->orderBy('r.id', 'ASC')
+            ->orderBy('r.id', SortDirection::Ascending)
             ->setParameter('wedding', $wedding->getId(), UuidType::NAME)
             ->getQuery()
             ->getResult();
@@ -88,6 +89,8 @@ final readonly class ModerationQueue
     {
         $mediaQb = $this->media
             ->createQueryBuilder('m')
+            ->leftJoin('m.uploaderGuest', 'g')
+            ->addSelect('g')
             ->where('m.wedding = :wedding')
             ->andWhere('m.deletedAt IS NULL')
             ->andWhere('m.visibility != :private')
@@ -96,6 +99,7 @@ final readonly class ModerationQueue
         $entryQb = $this->entries
             ->createQueryBuilder('e')
             ->join('e.author', 'a')
+            ->addSelect('a')
             ->where('a.wedding = :wedding')
             ->andWhere('e.deletedAt IS NULL')
             ->setParameter('wedding', $wedding->getId(), UuidType::NAME);
@@ -113,7 +117,7 @@ final readonly class ModerationQueue
                     ->setParameter('status', PublicationStatus::Published);
             }
 
-            $qb->orderBy("{$alias}.id", 'ASC')->setMaxResults(100);
+            $qb->orderBy("{$alias}.id", SortDirection::Ascending)->setMaxResults(100);
         }
 
         /** @var list<Media> $media */

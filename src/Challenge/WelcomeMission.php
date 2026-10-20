@@ -9,16 +9,28 @@ use App\Challenge\Repository\ChallengeRepository;
 use App\Wedding\Entity\Wedding;
 use App\Wedding\ModuleType;
 use DateTimeImmutable;
+use Symfony\Contracts\Service\ResetInterface;
 
 /**
  * Die Aufgabe, auf die neue Gäste direkt nach dem Beitritt hingewiesen werden: First Drink
  * (und als Gegenstück Last Drink). Erkannt am Motiv, also auch bei leicht umbenannten Aufgaben.
+ *
+ * Seiten fragen das oft mehrfach ab (z. B. je Kachel); die Aufgaben einer Hochzeit werden deshalb je Anfrage
+ * einmal geladen und danach verworfen (ResetInterface).
  */
-final readonly class WelcomeMission
+final class WelcomeMission implements ResetInterface
 {
+    /** @var array<string, list<Challenge>> */
+    private array $enabled = [];
+
     public function __construct(
-        private ChallengeRepository $challenges,
+        private readonly ChallengeRepository $challenges,
     ) {}
+
+    public function reset(): void
+    {
+        $this->enabled = [];
+    }
 
     public function firstDrink(Wedding $wedding, DateTimeImmutable $now): ?Challenge
     {
@@ -79,7 +91,8 @@ final readonly class WelcomeMission
             return null;
         }
 
-        foreach ($this->challenges->forWedding($wedding, true) as $challenge) {
+        $this->enabled[$wedding->getId()->toRfc4122()] ??= $this->challenges->forWedding($wedding, true);
+        foreach ($this->enabled[$wedding->getId()->toRfc4122()] as $challenge) {
             if (ChallengeMotif::for($challenge->getTitle()) === $motif && $available($challenge)) {
                 return $challenge;
             }

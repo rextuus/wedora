@@ -11,6 +11,7 @@ use App\Guest\Portrait\PortraitQuestions;
 use App\Guest\Portrait\PortraitStyle;
 use App\Guest\Portrait\PortraitStyleMode;
 use App\Media\MediaType;
+use App\Media\Processing\EnhanceWeddingPhotos;
 use App\Media\Repository\MediaRepository;
 use App\Wedding\CoupleNames;
 use App\Wedding\CoverMode;
@@ -32,6 +33,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
@@ -216,14 +218,22 @@ final class SettingsController extends AdminController
 
     /** Gemeinsamer Look aller Fotos (nur Anzeige). */
     #[Route('/foto-look', name: 'admin_settings_look', methods: ['POST'])]
-    public function look(Request $request, string $slug): Response
+    public function look(Request $request, string $slug, MessageBusInterface $bus): Response
     {
         $wedding = $this->wedding($slug, WeddingPermission::Configure);
         $this->requireCsrf($request);
-        $wedding
-            ->getPresentation()
-            ->choosePhotoLook(PhotoLook::tryFrom($request->request->getString('photo_look')) ?? PhotoLook::Natural);
+        $presentation = $wedding->getPresentation();
+        $presentation->choosePhotoLook(
+            PhotoLook::tryFrom($request->request->getString('photo_look')) ?? PhotoLook::Natural,
+        );
+        $enhance = $request->request->has('auto_enhance');
+        $changed = $enhance !== $presentation->enhancesPhotos();
+        $presentation->enhancePhotos($enhance);
         $this->em->flush();
+        // Vorhandene Fotos im Hintergrund nachziehen (an: angleichen, aus: Fassungen entfernen).
+        if ($changed) {
+            $bus->dispatch(new EnhanceWeddingPhotos($wedding->getId()->toRfc4122()));
+        }
         $this->addFlash('success', 'Foto-Look gespeichert.');
 
         return $this->redirectToRoute('admin_settings', ['slug' => $slug]);

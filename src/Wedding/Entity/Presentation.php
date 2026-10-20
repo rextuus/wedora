@@ -53,6 +53,10 @@ class Presentation
     #[ORM\Column(length: 8, enumType: PhotoLook::class, options: ['default' => 'natural'])]
     private PhotoLook $photoLook = PhotoLook::Natural;
 
+    /** Fotos automatisch angleichen (ffmpeg im Worker); Anzeige nutzt dann die angeglichene Fassung. */
+    #[ORM\Column(options: ['default' => false])]
+    private bool $autoEnhance = false;
+
     /** Figur „Zu viel am Handy?“: taucht nach einiger Zeit oder vielen Beiträgen auf – oder gar nicht. */
     #[ORM\Column(length: 8, enumType: NudgeMode::class, options: ['default' => 'time'])]
     private NudgeMode $nudgeMode = NudgeMode::Time;
@@ -143,6 +147,16 @@ class Presentation
     public function choosePhotoLook(PhotoLook $look): void
     {
         $this->photoLook = $look;
+    }
+
+    public function enhancesPhotos(): bool
+    {
+        return $this->autoEnhance;
+    }
+
+    public function enhancePhotos(bool $enhance): void
+    {
+        $this->autoEnhance = $enhance;
     }
 
     public function getNudgeMode(): NudgeMode

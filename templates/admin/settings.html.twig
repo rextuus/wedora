@@ -105,6 +105,8 @@
                     </label>
                 {% endfor %}
             </fieldset>
+            <label class="toggle"><input type="checkbox" name="auto_enhance"{% if wedding.presentation.enhancesPhotos() %} checked{% endif %}> Fotos zusätzlich automatisch angleichen</label>
+            <p class="muted">Der Server gleicht jedes Foto einmal an: Farbstich mäßig ausgeglichen, ruhigere Farben, etwas weicher und heller, leicht nachgeschärft. Das hilft gegen den „Handyfoto-Unterschied“ und passt zu jedem Look. Vorhandene Fotos werden im Hintergrund nachgezogen (je Foto etwa eine Sekunde). Originale, Downloads und Export bleiben unverändert; ausschalten zeigt wieder die Originale.</p>
             <button class="button button--primary" type="submit">Foto-Look speichern</button>
         </form>
     </section>

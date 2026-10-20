@@ -71,4 +71,9 @@ final class Version20261020090000 extends AbstractMigration
             'ALTER TABLE shoe_game_vote ADD CONSTRAINT FK_77130F4A9A4AA658 FOREIGN KEY (guest_id) REFERENCES guest (id) ON DELETE CASCADE',
         );
     }
+
+    public function isTransactional(): bool
+    {
+        return false;
+    }
 }

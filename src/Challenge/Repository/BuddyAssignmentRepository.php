@@ -11,6 +11,7 @@ use DateTimeImmutable;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
+use SortDirection;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Uid\Uuid;
 
@@ -35,7 +36,7 @@ class BuddyAssignmentRepository extends ServiceEntityRepository
             ->andWhere('a.seeker = :seeker')
             ->andWhere('a.endedAt IS NULL')
             ->andWhere('a.assignedAt > :since')
-            ->orderBy('a.assignedAt', 'DESC')
+            ->orderBy('a.assignedAt', SortDirection::Descending)
             ->setMaxResults(1)
             ->setParameter('seeker', $seeker->getId(), UuidType::NAME)
             ->setParameter('since', $since)

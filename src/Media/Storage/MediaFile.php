@@ -17,4 +17,7 @@ enum MediaFile: string
 
     /** Standbild des Videos; Quelle für Vorschaubilder via imgproxy. */
     case Poster = 'poster.jpg';
+
+    /** Angeglichene Fassung eines Fotos („Fotos automatisch angleichen“); Quelle für die Anzeige statt des Originals. */
+    case Enhanced = 'enhanced.jpg';
 }

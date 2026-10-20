@@ -56,4 +56,9 @@ final class Version20261019112812 extends AbstractMigration
             'ALTER TABLE media DROP processing_status, DROP processing_error, DROP original_mime_type, DROP original_bytes, DROP derived_bytes, DROP width, DROP height, DROP duration_seconds',
         );
     }
+
+    public function isTransactional(): bool
+    {
+        return false;
+    }
 }
