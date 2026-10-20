@@ -12,7 +12,7 @@
         <h1 class="headline-lg">Alle <em>Momente</em></h1>
     </header>
 
-    <nav class="tabs bleed bleed--padded" aria-label="Filter">
+    <nav class="tabs" aria-label="Filter">
         {% for f in filters %}
             {% if f.value != 'gaestebuch' or wedding.module(enum('App\\Wedding\\ModuleType').Guestbook).enabled %}
                 <a href="{{ path('guest_gallery', {slug: wedding.slug, filter: f.value}) }}"{% if f == filter %} aria-current="page"{% endif %}>{{ f.label }}</a>

@@ -6,6 +6,10 @@ framework:
             # https://symfony.com/doc/current/messenger.html#transport-configuration
             async:
                 dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                options:
+                    # Stürzt der Worker mitten in einem Auftrag ab, wird er nach 15 Minuten erneut zugestellt
+                    # (Standard: 1 Stunde). Länger als die maximale Videoumwandlung (10 Minuten).
+                    redeliver_timeout: 900
                 retry_strategy:
                     max_retries: 2
                     delay: 30000

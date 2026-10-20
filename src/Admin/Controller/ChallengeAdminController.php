@@ -70,6 +70,12 @@ final class ChallengeAdminController extends AdminController
             return $this->redirectToRoute('admin_challenges', ['slug' => $slug]);
         }
 
+        if ($this->hasOtherPoll($challenge)) {
+            $this->addFlash('error', 'Es gibt schon eine Umfrage – die Fragen gehören zur ganzen Hochzeit.');
+
+            return $this->redirectToRoute('admin_challenges', ['slug' => $slug]);
+        }
+
         $challenge->moveTo(count($this->challenges->forWedding($wedding)));
         $this->em->persist($challenge);
         $this->em->flush();
@@ -97,7 +103,13 @@ final class ChallengeAdminController extends AdminController
         try {
             $challenge->rename($request->request->getString('title'));
             $this->apply($challenge, $request);
+            if ($this->hasOtherPoll($challenge)) {
+                throw new InvalidArgumentException(
+                    'Es gibt schon eine Umfrage – die Fragen gehören zur ganzen Hochzeit.',
+                );
+            }
         } catch (InvalidArgumentException $e) {
+            $this->em->refresh($challenge);
             $this->addFlash('error', $e->getMessage());
 
             return $this->redirectToRoute('admin_challenges', ['slug' => $slug]);
@@ -123,6 +135,22 @@ final class ChallengeAdminController extends AdminController
             '' === $starts ? null : new DateTimeImmutable($starts),
             '' === $ends ? null : new DateTimeImmutable($ends),
         );
+    }
+
+    /** Eine Umfrage pro Hochzeit: Die Fragen hängen an der Hochzeit, nicht an der Aufgabe. */
+    private function hasOtherPoll(Challenge $challenge): bool
+    {
+        if (!$challenge->getMediaType()->isPoll()) {
+            return false;
+        }
+
+        foreach ($this->challenges->forWedding($challenge->getWedding()) as $other) {
+            if ($other !== $challenge && $other->getMediaType()->isPoll()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function find(Wedding $wedding, string $id): Challenge

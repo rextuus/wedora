@@ -5,6 +5,16 @@
   Gast-App: Kopfzeile mit Brautpaar + Bereich, Inhalt, Navigationsleiste unten (Daumenzone).
   Erwartet: wedding, guest, section (Name des aktiven Bereichs).
 #}
+{% block head %}
+    {# Als App auf dem Startbildschirm (Manifest ohne Gastdaten). #}
+    <link rel="manifest" href="{{ path('guest_app_manifest', {slug: wedding.slug}) }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/apple-touch-icon.png') }}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="{{ wedding.title }}">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+{% endblock %}
+
 {% block body %}
     {% set slug = wedding.slug %}
     <a class="skip-link" href="#main">Zum Inhalt springen</a>
@@ -13,16 +23,18 @@
             <span class="app-header__title">{{ wedding.title }}</span>
             <span class="app-header__section">{% block section %}{% endblock %}</span>
         </a>
-        <a class="app-header__avatar{{ guest.hasPortrait() ? ' app-header__avatar--portrait' : '' }}" href="{{ path('guest_album', {slug: slug}) }}" aria-label="Mein Album">
-            {%- if guest.hasPortrait() %}{{ include('guest/app/_portrait_art.html.twig') }}{% else %}{{ guest.displayName|first|upper }}{% endif -%}
-        </a>
+        <a class="app-header__avatar" href="{{ path('guest_album', {slug: slug}) }}" aria-label="Mein Album">{{ guest.displayName|first|upper }}</a>
     </header>
 
-    <main class="{% block main_class %}app-main{% endblock %}" id="main">
+    {% set nudge = nudge_settings(guest) %}
+    <main class="{% block main_class %}app-main{% endblock %}" id="main"
+          data-controller="nudge" data-nudge-mode-value="{{ nudge.mode }}" data-nudge-threshold-value="{{ nudge.threshold }}"
+          data-nudge-recent-value="{{ nudge.recent }}" data-nudge-key-value="wedora-nudge-{{ guest.id }}">
         {% for type, messages in app.flashes %}
             {% for message in messages %}<p class="notice notice--{{ type }}" role="status">{{ message }}</p>{% endfor %}
         {% endfor %}
         {% block content %}{% endblock %}
+        {{ include('guest/app/_nudge_dialog.html.twig') }}
     </main>
 
     {% set nav = [
@@ -30,7 +42,7 @@
         {route: 'guest_gallery', label: 'Galerie', icon: 'photos', key: 'gallery'},
     ] %}
     {% if wedding.module(enum('App\\Wedding\\ModuleType').Challenges).enabled %}
-        {% set nav = nav|merge([{route: 'guest_challenges', label: 'Aufgaben', icon: 'flag', key: 'challenges'}]) %}
+        {% set nav = nav|merge([{route: 'guest_challenges', label: 'Aufgaben', icon: 'sparkle', key: 'challenges'}]) %}
     {% endif %}
     {% if wedding.module(enum('App\\Wedding\\ModuleType').Guestbook).enabled %}
         {% set nav = nav|merge([{route: 'guest_guestbook', label: 'Gästebuch', icon: 'book', key: 'guestbook'}]) %}

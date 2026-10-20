@@ -9,8 +9,9 @@ use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Process\Process;
 
 /**
- * Macht aus der KI-Zeichnung (schwarze Linien auf Weiß) ein quadratisches PNG mit schwarzen Linien
- * auf transparentem Grund. Die Oberfläche färbt es per CSS-Maske in der Akzentfarbe ein.
+ * Macht aus der KI-Zeichnung ein quadratisches PNG. Linienzeichnungen (schwarz auf Weiß) werden zu schwarzen
+ * Linien auf transparentem Grund, die die Oberfläche per CSS-Maske einfärbt; farbige Stile werden nur
+ * quadratisch zugeschnitten.
  */
 final readonly class PortraitRenderer
 {
@@ -21,7 +22,7 @@ final readonly class PortraitRenderer
         private int $timeoutSeconds = 60,
     ) {}
 
-    public function render(string $drawingBytes, string $outputPath): void
+    public function render(string $drawingBytes, string $outputPath, bool $lineArt = true): void
     {
         $input = $outputPath . '.in';
         if (false === file_put_contents($input, $drawingBytes)) {
@@ -29,12 +30,14 @@ final readonly class PortraitRenderer
         }
 
         // Helligkeit wird zur Deckkraft: Weiß verschwindet, Linien bleiben; leichtes Papierrauschen wird abgeschnitten.
-        $filter = sprintf(
-            '[0:v]scale=%1$d:%1$d:force_original_aspect_ratio=decrease,pad=%1$d:%1$d:(ow-iw)/2:(oh-ih)/2:color=white,'
-            . "format=gray,negate,lutyuv=y='if(lt(val,28),0,min(255,val*1.5))'[a];"
-            . 'color=c=black:s=%1$dx%1$d,format=rgba[c];[c][a]alphamerge',
-            self::SIZE,
-        );
+        $filter = $lineArt
+            ? sprintf(
+                '[0:v]scale=%1$d:%1$d:force_original_aspect_ratio=decrease,pad=%1$d:%1$d:(ow-iw)/2:(oh-ih)/2:color=white,'
+                . "format=gray,negate,lutyuv=y='if(lt(val,28),0,min(255,val*1.5))'[a];"
+                . 'color=c=black:s=%1$dx%1$d,format=rgba[c];[c][a]alphamerge',
+                self::SIZE,
+            )
+            : sprintf('[0:v]scale=%1$d:%1$d:force_original_aspect_ratio=increase,crop=%1$d:%1$d', self::SIZE);
 
         $process = new Process([
             $this->ffmpeg,

@@ -1,0 +1,24 @@
+{% import 'components/ornament.html.twig' as deco %}
+{# Erklärt First Drink / Last Drink in einem Bild; darunter optional das Beispielvideo („ich bin auch dabei“).
+   Die jeweils andere Aufgabe ist verlinkt; `here` ist die Aufgabe, auf deren Seite die Box steht. #}
+{% set drinks = drink_challenges(wedding) %}
+{% set here = here ?? null %}
+<figure class="drink-explainer" aria-label="Erstes Video am Anfang des Abends, zweites am Ende – mit denselben Fragen">
+    {{ include('guest/app/_drink_step.html.twig', {target: drinks.first, motif: 'glasses', name: 'First Drink', when: 'gleich zu Beginn', hint: 'sag, wer du bist', late: false}) }}
+    <span class="drink-explainer__arrow" aria-hidden="true">
+        <svg viewBox="0 0 60 24" width="60" height="24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M4 14C18 4 38 4 54 12"/><path d="M48 6l6 6-8 3"/></svg>
+        <span>gleiche Fragen</span>
+    </span>
+    {{ include('guest/app/_drink_step.html.twig', {target: drinks.last, motif: 'moon', name: 'Last Drink', when: 'zum Abschluss', hint: 'wie war dein Abend?', late: true}) }}
+</figure>
+{% if example ?? true %}
+    <figure class="drink-example card">
+        <video src="{{ asset('videos/uwe.mp4') }}" poster="{{ asset('images/uwe-poster.jpg') }}" controls playsinline preload="none" width="264" height="480"
+               aria-label="Beispielvideo: „Ich bin der Uwe, und ich bin auch dabei“"></video>
+        <figcaption>
+            <span class="overline">So einfach geht’s</span>
+            <span class="drink-example__quote">„Ich bin der Uwe, und ich bin auch dabei.“</span>
+            <span class="muted">Ein Satz, wer du bist – schon bist du dabei. Den Rest erzählst du, wie du magst.</span>
+        </figcaption>
+    </figure>
+{% endif %}

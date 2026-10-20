@@ -1,0 +1,31 @@
+{% extends 'guest/app/_layout.html.twig' %}
+{% import 'components/icon.html.twig' as ui %}
+{% import 'components/ornament.html.twig' as deco %}
+
+{% block title %}Willkommen – {{ wedding.title }}{% endblock %}
+{% block section %}Willkommen{% endblock %}
+
+{% block content %}
+    <header class="section-header section-header--motif">
+        <span class="section-header__motif">{{ deco.motif('glasses', 92) }}</span>
+        <p class="overline">Schön, dass du da bist, {{ guest.displayName }}</p>
+        <h1 class="headline-lg">Deine erste <em>Aufgabe</em></h1>
+        <p class="lead">Bevor die Party richtig losgeht: Nimm dein erstes Glas und dreh ein kurzes Video. Sag, wer du bist, was du trinkst und was du {{ wedding.title }} wünschst.</p>
+    </header>
+
+    {{ include('guest/app/_drink_explainer.html.twig') }}
+
+    <div class="stack">
+        <a class="action-primary" href="{{ path('guest_upload', {slug: wedding.slug, aufgabe: firstDrink.id, kamera: 'selfie'}) }}">
+            <span class="action__icon">{{ ui.icon('camera', 26) }}</span>
+            <span><span class="action__title">First-Drink-Video drehen</span><span class="action__text">Frontkamera, bis {{ wedding.limits.maxVideoSeconds // 60 }} Minuten</span></span>
+        </a>
+        {% if lastDrink and lastDrink.startsAt %}
+            <p class="muted">Den Last Drink kannst du ab {{ lastDrink.startsAt|date('H:i') }} Uhr drehen – du findest ihn unter „Aufgaben“.</p>
+        {% elseif lastDrink %}
+            <p class="muted">Den Last Drink drehst du am Ende des Abends – du findest ihn unter „Aufgaben“.</p>
+        {% endif %}
+    </div>
+
+    <p class="spaced"><a class="text-link" href="{{ path('guest_home', {slug: wedding.slug}) }}">Erst mal umschauen {{ ui.icon('next', 14) }}</a></p>
+{% endblock %}

@@ -6,7 +6,8 @@
 {% block section %}Gästebuch{% endblock %}
 
 {% block content %}
-    <header class="section-header">
+    <header class="section-header section-header--motif">
+        <span class="section-header__motif">{{ deco.motif('envelope', 92) }}</span>
         <p class="overline">Gästebuch</p>
         <h1 class="headline-lg">Worte für das <em>Brautpaar</em></h1>
         {{ deco.sprig(110) }}
@@ -42,7 +43,7 @@
                 {{ deco.corner(48) }}
                 {% if item.message is defined %}
                     <blockquote class="guestbook__text">{{ item.message|nl2br }}</blockquote>
-                    <p class="muted">— {{ item.author.displayName }}, {{ item.createdAt|ago }}</p>
+                    <p class="muted byline">{{ include('guest/app/_avatar.html.twig', {who: item.author}) }}<span>— {{ item.author.displayName }}, {{ item.createdAt|ago }}</span></p>
                     {% if item.author.id.equals(guest.id) %}
                         <p class="badges">
                             {% if item.publicationStatus.value == 'pending' %}<span class="status status--pending">Wartet auf Freigabe</span>{% endif %}
@@ -59,7 +60,7 @@
                         {{ include('guest/app/_tile.html.twig', {media: item, likeCounts: {}, liked: {}}) }}
                     </div>
                     {% if item.caption %}<p>{{ item.caption }}</p>{% endif %}
-                    <p class="muted">— {{ item.uploaderGuest.displayName ?? 'Gast' }}, {{ item.createdAt|ago }}</p>
+                    <p class="muted byline">{{ include('guest/app/_avatar.html.twig', {who: item.uploaderGuest}) }}<span>— {{ item.uploaderGuest.displayName ?? 'Gast' }}, {{ item.createdAt|ago }}</span></p>
                 {% endif %}
             </li>
         {% endfor %}

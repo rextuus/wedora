@@ -1,0 +1,2 @@
+{# Kleines gezeichnetes Porträt am Namen – nur, wenn der Betrachter es sehen darf (siehe PortraitWall). Erwartet: who (Guest oder null). #}
+{% if portrait_visible(who) %}<span class="avatar">{{ include('guest/app/_portrait_art.html.twig', {who: who}) }}</span>{% endif %}

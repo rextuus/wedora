@@ -48,6 +48,18 @@ doctrine:
                 dir: '%kernel.project_dir%/src/Guestbook/Entity'
                 prefix: 'App\Guestbook\Entity'
                 alias: Guestbook
+            Ai:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Ai/Entity'
+                prefix: 'App\Ai\Entity'
+                alias: Ai
+            Poll:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Poll/Entity'
+                prefix: 'App\Poll\Entity'
+                alias: Poll
             Media:
                 type: attribute
                 is_bundle: false

@@ -7,6 +7,8 @@
 {% block content %}
     <a class="text-link back-link" href="{{ path('guest_gallery', {slug: wedding.slug}) }}">{{ ui.icon('back', 18) }} Zur Galerie</a>
 
+    <h1 class="visually-hidden">{{ media.caption ?: (media.type.value == 'video' ? 'Video' : 'Foto') ~ ' von ' ~ (media.uploaderGuest.displayName ?? 'einem Gast') }}</h1>
+
     <figure class="detail">
         {% if media.type.value == 'video' and media.ready %}
             <video class="detail__media" controls playsinline preload="metadata" poster="{{ media_url(media, 'image/display') }}">
@@ -20,7 +22,7 @@
         {% endif %}
         <figcaption class="detail__meta">
             <div>
-                <p><strong>{{ media.uploaderGuest.displayName ?? 'Gast' }}</strong> · <span class="muted">{{ media.createdAt|ago }}</span></p>
+                <p class="byline">{{ include('guest/app/_avatar.html.twig', {who: media.uploaderGuest}) }}<span><strong>{{ media.uploaderGuest.displayName ?? 'Gast' }}</strong> · <span class="muted">{{ media.createdAt|ago }}</span></span></p>
                 {% if media.caption %}<p class="detail__caption">{{ media.caption }}</p>{% endif %}
                 {% if own %}{{ include('guest/app/_status_badges.html.twig') }}{% endif %}
             </div>

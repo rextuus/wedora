@@ -89,6 +89,11 @@ final class GuestMediaController extends GuestApiController
         $challengeId = $request->query->getString('aufgabe');
         if (Uuid::isValid($challengeId)) {
             $challenge = $challenges->find(Uuid::fromString($challengeId));
+            // Bei der Umfrage lädt man nichts hoch – sie hat ihre eigene Seite.
+            if (null !== $challenge && $challenge->getWedding() === $wedding && $challenge->getMediaType()->isPoll()) {
+                return $this->redirectToRoute('guest_poll', ['slug' => $wedding->getSlug()]);
+            }
+
             $now = DateTimeImmutable::createFromInterface($clock->now());
             if (null === $challenge || $challenge->getWedding() !== $wedding || !$challenge->acceptsAt($now)) {
                 $challenge = null;
@@ -111,7 +116,12 @@ final class GuestMediaController extends GuestApiController
             },
             'challenge' => $challenge,
             'module' => $module,
-            'camera' => $request->query->getBoolean('kamera'),
+            // „1“: Rückkamera (Foto aufnehmen), „selfie“: Frontkamera (z. B. First-Drink-Video).
+            'camera' => match ($request->query->getString('kamera')) {
+                'selfie' => 'user',
+                '', '0' => null,
+                default => 'environment',
+            },
             'canUpload' => $this->isGranted(ModuleVoter::CONTRIBUTE, $wedding->module($module)),
             'maxPhoto' => UploadService::humanBytes($limits->maxPhotoBytes()),
             'maxVideo' => UploadService::humanBytes($limits->maxVideoBytes()),

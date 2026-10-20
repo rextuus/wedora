@@ -63,6 +63,6 @@ Im echten Stack wurden alle Gast- und Verwaltungsseiten mit Beispieldaten aufger
 ## Offen
 
 - **Nicht im Browser angesehen:** Optik, Layout auf dem Handy und Turbo-Verhalten (Like ohne Neuladen, „Mehr laden“) sind nur über HTML-Ausgabe und Tests geprüft.
-- **Barrierefreiheit:** Grundlagen sind umgesetzt (Labels, Fokusrahmen, `aria-current`, `aria-pressed`, Skip-Link, Alternativtexte, reduzierte Bewegung, Touch-Ziele ≥ 44 px). Ein Prüfdurchlauf mit Screenreader und Kontrastmessung steht aus (Phase 5).
+- **Barrierefreiheit:** Grundlagen sind umgesetzt (Labels, Fokusrahmen, `aria-current`, `aria-pressed`, Skip-Link, Alternativtexte, reduzierte Bewegung, Touch-Ziele ≥ 44 px). Automatische Prüfung inkl. Kontrast ist seit Phase 5 ohne Befund (`make test-browser`); ein Durchgang mit echtem Screenreader steht noch aus.
 - **Ohne E-Mail:** Konten werden mit Startpasswort angelegt; es gibt keinen Mailversand und kein Zurücksetzen per E-Mail.
 - **Zurückgestellt laut Auftraggeber:** Offline-Warteschlange, Einfach-Modus, Hilfe-Kontakt, Tischangabe, Massendownload für Gäste, Willkommens-Popup.

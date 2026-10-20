@@ -45,6 +45,9 @@
             <form method="post" action="{{ path('admin_challenge_update', {slug: wedding.slug, id: c.id}) }}" class="stack">
                 {{ include('admin/_csrf.html.twig') }}
                 {{ _self.fields(c, types) }}
+                {% if c.mediaType.isPoll() %}
+                    <p><a class="text-link" href="{{ path('admin_poll', {slug: wedding.slug}) }}">Fragen und Ergebnisse der Umfrage ›</a></p>
+                {% endif %}
                 <div class="button-row">
                     <button class="button button--primary" type="submit">Speichern</button>
                     <button class="button button--secondary button--danger" type="submit" name="action" value="loeschen" data-turbo-confirm="Aufgabe löschen? Beiträge bleiben erhalten.">Löschen</button>

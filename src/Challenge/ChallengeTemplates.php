@@ -17,8 +17,10 @@ final class ChallengeTemplates
         return [
             'first-drink' => [
                 'title' => 'First Drink',
-                'description' => 'Stoße an und halte dein erstes Glas des Abends fest!',
-                'type' => ChallengeMediaType::Photo,
+                'description' =>
+                    'Dreh gleich zu Beginn ein kurzes Video mit deinem ersten Glas: Wer bist du, was trinkst du, '
+                        . 'was wünschst du dem Brautpaar? Damit bist du offiziell dabei – das Gegenstück folgt am Ende des Abends.',
+                'type' => ChallengeMediaType::Video,
                 'points' => 10,
             ],
             'first-dance' => [
@@ -45,11 +47,19 @@ final class ChallengeTemplates
                 'type' => ChallengeMediaType::Video,
                 'points' => 20,
             ],
+            'poll' => [
+                'title' => 'Wer von beiden?',
+                'description' => 'Kleine Umfrage: Was meinst du, wer von den beiden macht was mehr?',
+                'type' => ChallengeMediaType::Poll,
+                'points' => 10,
+            ],
             'last-drink' => [
                 'title' => 'Last Drink',
-                'description' => 'Dein letztes Glas zum Abschluss des Abends.',
-                'type' => ChallengeMediaType::Photo,
-                'points' => 10,
+                'description' =>
+                    'Das Gegenstück zum First Drink: Gleiche Fragen, letztes Glas, späte Stunde. '
+                        . 'Und dazu: Wie war dein Abend?',
+                'type' => ChallengeMediaType::Video,
+                'points' => 15,
             ],
         ];
     }

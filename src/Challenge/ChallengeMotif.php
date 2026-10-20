@@ -15,6 +15,7 @@ final class ChallengeMotif
     private const array KEYWORDS = [
         'moon' => ['last drink', 'letzte', 'absacker', 'mitternacht'],
         'glasses' => ['drink', 'anstoßen', 'sekt', 'champagner', 'prost', 'toast', 'glas'],
+        'balloons' => ['wer von beiden', 'umfrage'],
         'couple' => ['first dance', 'erster tanz', 'hochzeitstanz', 'brautpaar tanzt'],
         'dance' => ['dancefloor', 'tanz', 'dance', 'party', 'disco'],
         'hands' => ['friend', 'freund', 'kennengelernt', 'selfie', 'gruppe'],

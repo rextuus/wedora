@@ -1,0 +1,69 @@
+{% extends 'guest/app/_layout.html.twig' %}
+{% import 'components/icon.html.twig' as ui %}
+{% import 'components/ornament.html.twig' as deco %}
+
+{% macro clip(media, label) %}
+    <figure class="drink-clip">
+        {% if media and media.ready %}
+            <video controls playsinline preload="none" poster="{{ media_url(media, 'image/display') }}" aria-label="{{ label }}">
+                <source src="{{ media_url(media, 'video.mp4') }}" type="video/mp4">
+            </video>
+        {% else %}
+            <div class="drink-clip__placeholder">{{ media ? 'wird verarbeitet …' : 'fehlt noch' }}</div>
+        {% endif %}
+        <figcaption>{{ label }}</figcaption>
+    </figure>
+{% endmacro %}
+
+{% block title %}Vorher – nachher – {{ wedding.title }}{% endblock %}
+{% block section %}Aufgaben{% endblock %}
+
+{% block content %}
+    <a class="text-link back-link" href="{{ path('guest_challenges', {slug: wedding.slug}) }}">{{ ui.icon('back', 14) }} Alle Aufgaben</a>
+
+    <header class="section-header section-header--motif">
+        <span class="section-header__motif">{{ deco.motif('moon', 92) }}</span>
+        <p class="overline">First Drink &amp; Last Drink</p>
+        <h1 class="headline-lg">Vorher – <em>nachher</em></h1>
+        <p class="lead">Das erste und das letzte Video eines Abends nebeneinander. Die Vergleiche der anderen siehst du, sobald du selbst beide gedreht hast.</p>
+    </header>
+
+    {% set unlocked = own.first and own.last %}
+
+    <section class="card drink-pair drink-pair--own" aria-labelledby="own-title">
+        <h2 id="own-title" class="headline-sm">Dein Vorher – nachher</h2>
+        <div class="drink-pair__clips">
+            {{ _self.clip(own.first, 'First Drink') }}
+            {{ _self.clip(own.last, 'Last Drink') }}
+        </div>
+        {% if not unlocked %}
+            <div class="button-row">
+                {% if not own.first %}<a class="button button--primary" href="{{ path('guest_challenge', {slug: wedding.slug, id: firstDrink.id}) }}">{{ ui.icon('camera', 18) }} First Drink drehen</a>{% endif %}
+                {% if not own.last %}<a class="button {{ own.first ? 'button--primary' : 'button--secondary' }}" href="{{ path('guest_challenge', {slug: wedding.slug, id: lastDrink.id}) }}">{{ ui.icon('camera', 18) }} Last Drink{{ lastDrink.startsAt and not lastDrink.hasStartedAt(now) ? ' (ab ' ~ lastDrink.startsAt|date('H:i') ~ ' Uhr)' : ' drehen' }}</a>{% endif %}
+            </div>
+        {% endif %}
+    </section>
+
+    {% if not unlocked %}
+        <div class="empty-state card">
+            {{ deco.motif('glasses', 72) }}
+            <p class="lead">Noch gesperrt: Die Vergleiche der anderen siehst du, sobald dein eigenes Paar komplett ist.</p>
+        </div>
+    {% elseif others is empty %}
+        <div class="empty-state card">
+            {{ deco.motif('glasses', 72) }}
+            <p class="lead">Du bist die oder der Erste mit beiden Videos – die anderen folgen bestimmt.</p>
+        </div>
+    {% else %}
+        <h2 class="overline">Die anderen ({{ others|length }})</h2>
+        {% for pair in others %}
+            <section class="card drink-pair" aria-label="Vorher – nachher von {{ pair.guest.displayName }}">
+                <p class="drink-pair__name">{{ pair.guest.displayName }}</p>
+                <div class="drink-pair__clips">
+                    {{ _self.clip(pair.first, 'First Drink') }}
+                    {{ _self.clip(pair.last, 'Last Drink') }}
+                </div>
+            </section>
+        {% endfor %}
+    {% endif %}
+{% endblock %}

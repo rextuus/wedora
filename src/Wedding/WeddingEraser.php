@@ -11,12 +11,14 @@ use App\Media\Export\ExportFiles;
 use App\Media\Storage\MediaStorage;
 use App\Media\Upload\UploadBuffer;
 use App\Wedding\Entity\Wedding;
+use App\Wedding\Host\WeddingPictureStorage;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 
 /**
  * Vollständige, endgültige Löschung einer Hochzeit (FR-14): Originale, Varianten,
- * Standbilder, offene Upload-Stücke, Export-Archive, gezeichnete Porträts und alle Datensätze.
+ * Standbilder, offene Upload-Stücke, Export-Archive, gezeichnete Porträts, Foto der Betreiberin/des
+ * Betreibers und alle Datensätze.
  * Es gibt keinen Bild-Cache. Selfies für Porträts gehen nur flüchtig an Gemini und liegen
  * bei uns höchstens bis zur fertigen Zeichnung (siehe ADR 0005).
  */
@@ -28,6 +30,7 @@ final readonly class WeddingEraser
         private UploadBuffer $uploads,
         private ExportFiles $exports,
         private PortraitStorage $portraits,
+        private WeddingPictureStorage $pictures,
     ) {}
 
     public function erase(Wedding $wedding): void
@@ -52,6 +55,7 @@ final readonly class WeddingEraser
 
         $this->exports->deleteAllFor($wedding);
         $this->portraits->deleteAllFor($wedding);
+        $this->pictures->deleteAll($wedding);
 
         // Datenbank: Fremdschlüssel mit ON DELETE CASCADE entfernen Gäste, Einladungen,
         // Mitgliedschaften, Module, Medien, Uploads und Exporte.

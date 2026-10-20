@@ -8,7 +8,16 @@
 {% set isVideo = media.type.value == 'video' %}
 {% set alt = media.caption ?: (isVideo ? 'Video' : 'Foto') ~ ' von ' ~ who %}
 {% set shared = media.ready and media.publicationStatus.value == 'published' %}
-<a class="tile{{ media.publicationStatus.value != 'published' ? ' tile--pending' : '' }}" href="{{ path('guest_media', {slug: wedding.slug, id: id}) }}"
+{# Etwa jedes vierte Foto zoomt ganz langsam hinein („Ken Burns“); stabil je Foto, damit nichts springt. #}
+{% set drift = not isVideo and id|last in ['1', '5', '9', 'd'] ? ' tile--drift tile--drift-' ~ ({'1': 'a', '5': 'b', '9': 'c', 'd': 'a'}[id|last]) : '' %}
+{% if media.ready and drink_locked(media) %}
+    {# Fremdes First-/Last-Drink-Video, solange das eigene zu dieser Aufgabe fehlt: nur verwischte Mini-Vorschau. #}
+    <a class="tile tile--locked" href="{{ path('guest_challenge', {slug: wedding.slug, id: media.challenge.id}) }}" data-turbo-frame="_top" aria-label="Gesperrtes Video – erst nach deinem eigenen {{ media.challenge.title }}-Video">
+        <span class="tile__blur" style="background-image: url('{{ media_url(media, 'image/tiny') }}')" aria-hidden="true"></span>
+        <span class="tile__lock">{{ ui.icon('lock', 20) }}<span>Erst eigenes {{ media.challenge.title }}</span></span>
+    </a>
+{% else %}
+<a class="tile{{ media.publicationStatus.value != 'published' ? ' tile--pending' : '' }}{{ drift }}" href="{{ path('guest_media', {slug: wedding.slug, id: id}) }}"
    {% if media.ready %}
        data-lightbox-target="tile" data-action="lightbox#open"
        data-src="{{ media_url(media, 'image/display') }}"
@@ -26,7 +35,7 @@
         <span class="tile__placeholder">{{ media.processingStatus.value == 'failed' ? 'Fehlgeschlagen' : 'Wird verarbeitet …' }}</span>
     {% endif %}
     {% if meta|default(false) and media.ready %}
-        <span class="tile__meta"><span class="tile__who">{{ who }}</span>{% if media.caption %}<span class="tile__caption">{{ media.caption }}</span>{% endif %}</span>
+        <span class="tile__meta"><span class="tile__who">{{ include('guest/app/_avatar.html.twig', {who: media.uploaderGuest}) }}{{ who }}</span>{% if media.caption %}<span class="tile__caption">{{ media.caption }}</span>{% endif %}</span>
     {% endif %}
     {% if showStatus|default(false) %}
         <span class="tile__flag">
@@ -40,3 +49,4 @@
         <span class="tile__likes">{{ ui.icon('heart_filled', 12) }} {{ likeCounts[id] }}</span>
     {% endif %}
 </a>
+{% endif %}

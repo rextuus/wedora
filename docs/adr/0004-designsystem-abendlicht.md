@@ -60,4 +60,4 @@ Die Verwaltung nutzt dieselben Token.
 - `assets/styles/app.css` wurde neu geschrieben, die Klassennamen der Formulare und Bausteine blieben erhalten.
 - Neuer Stimulus-Controller `assets/controllers/lightbox_controller.js`; ohne JavaScript führen die Kacheln weiterhin zur Detailseite.
 - Der Like-Endpunkt antwortet auf `Accept: application/json` mit JSON (für die Vollbild-Ansicht).
-- Ein Prüfwerkzeug für Screenshots (Playwright im Docker-Netz) wurde während der Umsetzung benutzt. Es ist noch nicht im Repository; eine dauerhafte Einbindung ist für Phase 5 vorgesehen.
+- Browser-Prüfungen (Playwright im Docker-Netz) sind seit Phase 5 als `make test-browser` im Repository (`tests/Browser/`), siehe `docs/phase-5-design-und-qualitaet.md`.

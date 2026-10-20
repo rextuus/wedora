@@ -8,20 +8,23 @@ use App\Challenge\ChallengeTemplates;
 use App\Challenge\Entity\Challenge;
 use App\Guestbook\Entity\GuestbookEntry;
 use App\Media\Visibility;
+use App\Poll\Entity\PollQuestion;
+use App\Poll\Entity\PollVote;
+use App\Poll\PollChoice;
+use App\Poll\PollTemplates;
 use App\Wedding\Entity\Wedding;
 use App\Wedding\PublicLinks;
 use App\Wedding\Repository\WeddingRepository;
 use App\Wedding\WeddingEraser;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\Console\Attribute\Argument;
 use Symfony\Component\Console\Attribute\AsCommand;
-use Symfony\Component\Console\Attribute\Option;
+use Symfony\Component\Console\Attribute\MapInput;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
- * Baut eine komplette Vorführ-Hochzeit: Aufgabe „First Drink“, gezeichnete Porträts an,
+ * Baut eine komplette Vorführ-Hochzeit: Aufgaben „First Drink“ und „Last Drink“, Umfrage „Wer von beiden?“ mit Stimmen, gezeichnete Porträts an,
  * Beispielgäste mit Fotos, Videos, Likes und Gästebucheinträgen.
  */
 #[AsCommand(name: 'app:demo:seed', description: 'Legt eine vollständige Vorführ-Hochzeit mit Beispieldaten an')]
@@ -41,21 +44,20 @@ final readonly class SeedDemoCommand
         private EntityManagerInterface $em,
     ) {}
 
-    public function __invoke(
-        SymfonyStyle $io,
-        #[Argument(description: 'Ordner mit Beispielmedien (JPEG/PNG/MP4, optionale .txt als Bildunterschrift)')]
-        string $directory = 'var/demo-photos',
-        #[Option(description: 'URL-Kürzel der Vorführ-Hochzeit')]
-        string $slug = 'larissa-und-tim',
-        #[Option(description: 'Anzeigename')]
-        string $title = 'Larissa & Tim',
-        #[Option(description: 'Hochzeitsdatum (YYYY-MM-DD)')]
-        string $date = '2027-07-18',
-        #[Option(description: 'Vorhandene Hochzeit mit diesem Kürzel vorher vollständig löschen')]
-        bool $reset = false,
-    ): int {
+    public function __invoke(SymfonyStyle $io, #[MapInput] SeedDemoInput $input): int
+    {
+        [$directory, $slug, $title, $date, $reset] = [
+            $input->directory,
+            $input->slug,
+            $input->title,
+            $input->date,
+            $input->reset,
+        ];
         if (!is_dir($directory)) {
-            $io->error(sprintf('Ordner „%s“ nicht gefunden. Beispielmedien zuerst auf den Server kopieren (siehe docs/deployment.md).', $directory));
+            $io->error(sprintf(
+                'Ordner „%s“ nicht gefunden. Beispielmedien zuerst auf den Server kopieren (siehe docs/deployment.md).',
+                $directory,
+            ));
 
             return Command::FAILURE;
         }
@@ -75,12 +77,17 @@ final readonly class SeedDemoCommand
         $wedding = $this->createWedding($slug, $title, $date);
         $imported = $this->seeder->importDirectory($wedding, $directory, true, $io->writeln(...));
         $this->writeGuestbook($wedding);
+        $this->playPoll($wedding);
 
-        $io->success(sprintf('Vorführ-Hochzeit „%s“ mit %d Medien angelegt. Videos verarbeitet der Worker.', $title, count($imported)));
-        $io->definitionList(
-            ['QR-/Beitrittslink' => $this->links->join($wedding)],
-            ['Verwaltung' => sprintf('app:user:create … und app:wedding:grant %s <e-mail> view_content moderate configure manage_access export manage_lifecycle', $slug)],
-        );
+        $io->success(sprintf(
+            'Vorführ-Hochzeit „%s“ mit %d Medien angelegt. Videos verarbeitet der Worker.',
+            $title,
+            count($imported),
+        ));
+        $io->definitionList(['QR-/Beitrittslink' => $this->links->join($wedding)], ['Verwaltung' => sprintf(
+            'app:user:create … und app:wedding:grant %s <e-mail> view_content moderate configure manage_access export manage_lifecycle',
+            $slug,
+        )]);
 
         return Command::SUCCESS;
     }
@@ -90,17 +97,44 @@ final readonly class SeedDemoCommand
         $wedding = new Wedding($slug, $title, new DateTimeImmutable($date));
         $wedding->enablePortraits(true);
 
-        $template = ChallengeTemplates::all()['first-drink'];
+        $this->em->persist($wedding);
+        foreach (['first-drink', 'last-drink'] as $position => $key) {
+            $template = ChallengeTemplates::all()[$key];
+            $challenge = new Challenge($wedding, $template['title']);
+            $challenge->describe($template['description']);
+            $challenge->setMediaType($template['type']);
+            $challenge->setPoints($template['points']);
+            $challenge->moveTo($position);
+            $this->em->persist($challenge);
+        }
+
+        $this->em->flush();
+
+        return $wedding;
+    }
+
+    /** Sechs Umfrage-Fragen mit Stimmen aller Beispielgäste. */
+    private function playPoll(Wedding $wedding): void
+    {
+        $template = ChallengeTemplates::all()['poll'];
         $challenge = new Challenge($wedding, $template['title']);
         $challenge->describe($template['description']);
         $challenge->setMediaType($template['type']);
         $challenge->setPoints($template['points']);
-
-        $this->em->persist($wedding);
+        $challenge->moveTo(2);
         $this->em->persist($challenge);
-        $this->em->flush();
+        $guests = $this->seeder->guests($wedding);
+        foreach (array_slice(PollTemplates::QUESTIONS, 0, 6) as $i => $text) {
+            $question = new PollQuestion($wedding, $text);
+            $question->moveTo($i);
+            $this->em->persist($question);
+            foreach ($guests as $guest) {
+                $choice = random_int(1, 100) <= 60 ? PollChoice::First : PollChoice::Second;
+                $this->em->persist(new PollVote($question, $guest, $choice));
+            }
+        }
 
-        return $wedding;
+        $this->em->flush();
     }
 
     private function writeGuestbook(Wedding $wedding): void

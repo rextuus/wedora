@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Wedding\Entity;
 
+use App\Guest\Portrait\PortraitStyle;
+use App\Guest\Portrait\PortraitStyleMode;
 use App\Wedding\ModerationMode;
 use App\Wedding\ModuleType;
 use App\Wedding\Repository\WeddingRepository;
@@ -56,6 +58,24 @@ class Wedding
     #[ORM\Column]
     private bool $portraitsEnabled = false;
 
+    /** @var list<string> angebotene Zeichenstile (Werte von PortraitStyle) */
+    #[ORM\Column(type: 'json')]
+    private array $portraitStyles = ['line'];
+
+    #[ORM\Column(length: 8, enumType: PortraitStyleMode::class, options: ['default' => 'random'])]
+    private PortraitStyleMode $portraitStyleMode = PortraitStyleMode::Random;
+
+    /** Zufälliges Accessoire (Sonnenbrille, Partyhut …) im Porträt. */
+    #[ORM\Column(options: ['default' => true])]
+    private bool $portraitGadgets = true;
+
+    #[ORM\Embedded(class: Presentation::class, columnPrefix: false)]
+    private Presentation $presentation;
+
+    /** Ergebnisse der Umfrage für Gäste anzeigen (nach der eigenen Stimme). */
+    #[ORM\Column]
+    private bool $pollLiveResults = true;
+
     public function __construct(
         string $slug,
         #[ORM\Column(length: 120)]
@@ -69,6 +89,7 @@ class Wedding
 
         $this->id = Uuid::v7();
         $this->slug = $slug;
+        $this->presentation = new Presentation();
         $this->access = new AccessPolicy();
         $this->limits = new MediaLimits();
         $this->modules = new ArrayCollection();
@@ -189,6 +210,67 @@ class Wedding
     public function enablePortraits(bool $enabled): void
     {
         $this->portraitsEnabled = $enabled;
+    }
+
+    /**
+     * @return list<PortraitStyle> mindestens ein Stil (ohne Auswahl: feine Linien)
+     */
+    public function portraitStyles(): array
+    {
+        $styles = array_values(array_filter(array_map(PortraitStyle::tryFrom(...), $this->portraitStyles)));
+
+        return [] === $styles ? [PortraitStyle::Line] : $styles;
+    }
+
+    public function arePortraitGadgetsEnabled(): bool
+    {
+        return $this->portraitGadgets;
+    }
+
+    public function enablePortraitGadgets(bool $enabled): void
+    {
+        $this->portraitGadgets = $enabled;
+    }
+
+    public function getPortraitStyleMode(): PortraitStyleMode
+    {
+        return $this->portraitStyleMode;
+    }
+
+    public function decidePortraitStylesBy(PortraitStyleMode $mode): void
+    {
+        $this->portraitStyleMode = $mode;
+    }
+
+    /** Darf der Gast den Stil wählen (und gibt es überhaupt eine Wahl)? */
+    public function letsGuestsChoosePortraitStyle(): bool
+    {
+        return PortraitStyleMode::Choice === $this->portraitStyleMode && count($this->portraitStyles()) > 1;
+    }
+
+    /**
+     * @param list<PortraitStyle> $styles
+     */
+    public function offerPortraitStyles(array $styles): void
+    {
+        $values = array_values(array_unique(array_map(static fn(PortraitStyle $s): string => $s->value, $styles)));
+        $this->portraitStyles = [] === $values ? [PortraitStyle::Line->value] : $values;
+    }
+
+    /** Gastgeber, Server und Titelbild (siehe Presentation). */
+    public function getPresentation(): Presentation
+    {
+        return $this->presentation;
+    }
+
+    public function showsPollLiveResults(): bool
+    {
+        return $this->pollLiveResults;
+    }
+
+    public function showPollLiveResults(bool $show): void
+    {
+        $this->pollLiveResults = $show;
     }
 
     public function getCreatedAt(): DateTimeImmutable

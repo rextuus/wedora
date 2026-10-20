@@ -21,6 +21,7 @@ use App\Tests\Functional\WebTestCase;
 use App\Wedding\Entity\Wedding;
 use App\Wedding\ModerationMode;
 use App\Wedding\ModuleType;
+use App\Wedding\PublicLinks;
 use App\Wedding\Repository\InvitationRepository;
 use App\Wedding\Repository\WeddingRepository;
 use DateTimeImmutable;
@@ -213,6 +214,13 @@ final class AdminTest extends WebTestCase
         $this->client->request('GET', "/admin/h/{$slug}/zugang/qr.svg");
         self::assertResponseHeaderSame('Content-Type', 'image/svg+xml');
         self::assertStringContainsString('<svg', (string) $this->client->getResponse()->getContent());
+
+        // Test-Code fürs Heimnetz nur, wenn lokal eine Heimnetz-Adresse eingestellt ist (LAN_BASE_URL).
+        $lan = self::service(PublicLinks::class)->lanJoin(self::fresh($wedding));
+        $this->client->request('GET', "/admin/h/{$slug}/zugang/qr.svg?netz=lan");
+        self::assertResponseStatusCodeSame(null === $lan ? 404 : 200);
+        $this->client->request('GET', "/admin/h/{$slug}/zugang");
+        self::assertSelectorCount(null === $lan ? 1 : 2, '.qr-pair img.qr');
 
         $this->client->request('POST', "/admin/h/{$slug}/zugang/einladungen", [
             '_token' => $token,

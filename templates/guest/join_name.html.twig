@@ -6,8 +6,8 @@
 {% import 'components/ornament.html.twig' as deco %}
 
 {% block content %}
-    <header class="page-header">
-        <span class="page-header__motif">{{ deco.motif('rings', 104) }}</span>
+    <header class="page-header page-header--motif">
+        <span class="page-header__motif">{{ deco.motif('rings', 96) }}</span>
         {% include 'guest/_wedding_badge.html.twig' %}
         <h1 class="display">Willkommen!</h1>
         <p class="tagline">Schön, dass du da bist</p>
@@ -19,6 +19,7 @@
             {{ form_row(form.displayName) }}
             <button type="submit" class="button button--primary button--block">Los geht’s</button>
         {{ form_end(form) }}
+        {{ include('guest/_privacy_note.html.twig') }}
         <p class="muted">Kein Konto nötig. Dein Zugang wird nur in diesem Browser gespeichert – wenn du Browserdaten löschst oder das Gerät wechselst, brauchst du den Link erneut.</p>
     </section>
 {% endblock %}

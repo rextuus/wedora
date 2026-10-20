@@ -1,0 +1,16 @@
+{% import 'components/ornament.html.twig' as deco %}
+{#
+  „Zu viel am Handy?“: Die kleine Figur ist zunächst versteckt und taucht erst auf, wenn die Bedingung aus den
+  Einstellungen erfüllt ist (Zeit in der App oder viele Beiträge). Wer sie antippt, sieht den Hinweis.
+  Steuerung: nudge_controller.
+#}
+<button type="button" class="nudge__trigger" hidden data-nudge-target="trigger" data-action="nudge#open" aria-haspopup="dialog" aria-label="Psst – ein kleiner Hinweis">
+    <span class="nudge__psst" aria-hidden="true">Psst …</span>
+    {{ deco.phone_zombie(64) }}
+</button>
+<dialog class="nudge__dialog card" data-nudge-target="dialog" data-action="click->nudge#backdrop close->nudge#closed" aria-labelledby="nudge-title">
+    {{ deco.phone_zombie(110) }}
+    <h2 id="nudge-title" class="headline-sm">Ja, die Seite hier ist mega cool, ich weiß.</h2>
+    <p>Aber vergiss nicht, auch die Feier zu genießen. Fotos, die du gemacht hast, kannst du auch später noch hochladen.</p>
+    <button type="button" class="button button--primary" data-action="nudge#close" autofocus>Okay, Handy weg!</button>
+</dialog>

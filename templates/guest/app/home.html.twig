@@ -7,14 +7,17 @@
 {% block main_class %}app-main app-main--flush{% endblock %}
 
 {% block content %}
-    {% set cover = fresh|filter(m => m.type.value == 'photo')|first ?: fresh|first %}
+    {# Oben: Mosaik der neuesten Beiträge, festes Titelbild oder nichts (Einstellungen → Titelbild). #}
+    {% set fixedCover = wedding.presentation.showsFixedCover() ? path('wedding_picture', {slug: wedding.slug, kind: 'titelbild', v: wedding.presentation.coverPhotoAt|date('U')}) : null %}
+    {% set showMosaic = wedding.presentation.coverMode.value == 'latest' or (wedding.presentation.coverMode.value == 'fixed' and not fixedCover) %}
+    {% set coverSrc = fixedCover %}
     {% set showPortrait = guest.portraitStatus or portraitOffered %}
-    <section class="hero bleed{{ cover ? '' : ' hero--plain' }}{{ showPortrait ? ' hero--portrait' : '' }}">
-        {% if cover %}<img class="hero__image" src="{{ media_url(cover, 'image/display') }}" alt="" aria-hidden="true">{% endif %}
+    <section class="hero bleed{{ coverSrc ? '' : ' hero--plain' }}{{ showPortrait ? ' hero--portrait' : '' }}">
+        {% if coverSrc %}<img class="hero__image" src="{{ coverSrc }}" alt="" aria-hidden="true">{% endif %}
         <div class="hero__content">
             {% if showPortrait %}
                 {{ include('guest/app/_portrait_frame.html.twig') }}
-            {% elseif not cover %}
+            {% elseif not coverSrc %}
                 <span class="hero__motif">{{ deco.motif('balloons', 128) }}</span>
             {% endif %}
             <p class="overline">{{ wedding.title }}{% if wedding.weddingDate %} · {{ wedding.weddingDate|format_date(pattern: 'd. MMMM y', locale: 'de') }}{% endif %}</p>
@@ -23,6 +26,25 @@
             {{ deco.sprig(132) }}
         </div>
     </section>
+
+    {% if showMosaic %}
+        <section class="home-mosaic" aria-labelledby="mosaic-title">
+            <h2 id="mosaic-title" class="visually-hidden">Frisch von der Feier</h2>
+            {% if mosaic is empty %}
+                <div class="empty-state card">
+                    {{ deco.motif('polaroids', 80) }}
+                    <p class="lead">Noch nichts geteilt – sei der oder die Erste!</p>
+                </div>
+            {% else %}
+                <div class="magazine" data-controller="lightbox gallery-motion" data-lightbox-token-value="{{ csrf_token('guest-action') }}">
+                    {% for media in mosaic %}
+                        {{ include('guest/app/_tile.html.twig') }}
+                    {% endfor %}
+                </div>
+                <a class="button button--secondary button--block home-mosaic__more" href="{{ path('guest_gallery', {slug: wedding.slug}) }}">{{ ui.icon('photos', 18) }} Zur Galerie</a>
+            {% endif %}
+        </section>
+    {% endif %}
 
     {% if canUpload %}
         <div class="actions">
@@ -37,10 +59,41 @@
         </div>
     {% endif %}
 
+    {% if wall is not null %}
+        {% set others = wall|filter(g => g is not same as(guest)) %}
+        {% set faces = others|filter(g => portrait_visible(g))|slice(0, 4) %}
+        <a class="card wall-teaser" href="{{ path('guest_wall', {slug: wedding.slug}) }}">
+            {% if faces is not empty %}
+                <span class="wall-teaser__faces">{% for who in faces %}{{ include('guest/app/_avatar.html.twig', {who: who}) }}{% endfor %}</span>
+            {% else %}
+                {{ deco.motif('hands', 56) }}
+            {% endif %}
+            <span>
+                <span class="wall-teaser__title">Wer ist alles da?</span>
+                <span class="muted">{% if others is empty %}Die Gästewand mit gezeichneten Porträts.{% else %}{{ others|length }} {{ others|length == 1 ? 'Gast zeigt sein' : 'Gäste zeigen ihr' }} Porträt{{ faces is empty ? ' – zeig deins, dann siehst du sie.' : '.' }}{% endif %}</span>
+            </span>
+        </a>
+    {% endif %}
+
+    <section class="install-hint" hidden data-controller="install-hint" data-install-hint-link-value="{{ path('guest_app_link', {slug: wedding.slug}) }}" aria-label="Auf den Startbildschirm legen">
+        <img class="install-hint__icon" src="{{ asset('images/app-icon-192.png') }}" alt="" width="44" height="44">
+        <div class="install-hint__text">
+            <p class="install-hint__title">Auf den Startbildschirm</p>
+            <p>Dann bist du mit einem Tipp wieder hier – ohne QR-Code.</p>
+            <button type="button" class="button button--primary install-hint__button" hidden data-install-hint-target="install" data-action="install-hint#install">Hinzufügen</button>
+            <div hidden data-install-hint-target="ios">
+                <button type="button" class="button button--primary install-hint__button" data-action="install-hint#prepareIos">Link vorbereiten</button>
+            </div>
+            <p hidden data-install-hint-target="iosReady">Jetzt unten auf {{ ui.icon('share', 16) }} <strong>Teilen</strong> tippen und <strong>„Zum Home-Bildschirm“</strong> wählen. Der Link gilt nur für dich und nur einmal – bitte nicht verschicken.</p>
+            <p hidden data-install-hint-target="other">Öffne das Browsermenü <strong>⋮</strong> und wähle <strong>„Zum Startbildschirm hinzufügen“</strong>.</p>
+        </div>
+        <button type="button" class="install-hint__close" aria-label="Hinweis ausblenden" data-action="install-hint#dismiss">{{ ui.icon('close', 18) }}</button>
+    </section>
+
     {% if challenges is not empty %}
         <section aria-labelledby="mission-title">
             <div class="section-row">
-                <h2 id="mission-title" class="overline">{{ ui.icon('flag', 14) }} Aufgaben</h2>
+                <h2 id="mission-title" class="overline">{{ ui.icon('sparkle', 15) }} Aufgaben</h2>
                 <span class="overline">{{ completed|length }} / {{ challenges|length }}</span>
             </div>
             {% if activeChallenge %}
@@ -50,8 +103,13 @@
                     <p class="badge"><span class="dot"></span> Jetzt aktiv</p>
                     <h3 class="mission__title">{{ activeChallenge.title }}</h3>
                     {% if activeChallenge.description %}<p class="lead">{{ activeChallenge.description }}</p>{% endif %}
-                    {% if participants[aid] ?? 0 %}<p class="muted">{{ participants[aid] }} {{ participants[aid] == 1 ? 'Gast hat' : 'Gäste haben' }} schon mitgemacht</p>{% endif %}
-                    <a class="button button--primary" href="{{ path('guest_upload', {slug: wedding.slug, aufgabe: aid}) }}">{{ ui.icon('camera', 18) }} {{ activeChallenge.mediaType.value == 'video' ? 'Video drehen' : 'Mitmachen' }}</a>
+                    {% set n = participants[aid] ?? 0 %}
+                    <p class="participation">{{ ui.icon('users', 18) }} {% if n %}<span><strong>{{ n }}</strong> {{ n == 1 ? 'Gast hat' : 'Gäste haben' }} schon mitgemacht</span>{% else %}<span>Noch niemand dabei – sei der oder die Erste!</span>{% endif %}</p>
+                    {% if activeChallenge.mediaType.isPoll() %}
+                        <a class="button button--primary" href="{{ path('guest_poll', {slug: wedding.slug}) }}">{{ ui.icon('sparkle', 18) }} Abstimmen</a>
+                    {% else %}
+                        <a class="button button--primary" href="{{ path('guest_upload', {slug: wedding.slug, aufgabe: aid}) }}">{{ ui.icon('camera', 18) }} {{ activeChallenge.mediaType.value == 'video' ? 'Video drehen' : 'Mitmachen' }}</a>
+                    {% endif %}
                 </div>
             {% else %}
                 <div class="mission card mission--quiet">
@@ -66,7 +124,7 @@
                     <li>
                         <a href="{{ path('guest_challenge', {slug: wedding.slug, id: cid}) }}">
                             <span>{{ c.title }}</span>
-                            <span class="muted">{% if completed[cid] ?? false %}✓ Erledigt{% elseif not c.hasStartedAt(now) %}Ab {{ c.startsAt|date('H:i') }} Uhr{% elseif c.hasEndedAt(now) %}Beendet{% else %}Offen{% endif %}</span>
+                            <span class="muted">{% if completed[cid] ?? false %}✓ Erledigt{% elseif not c.hasStartedAt(now) %}Ab {{ c.startsAt|date('H:i') }} Uhr{% elseif c.hasEndedAt(now) %}Beendet{% else %}Offen{% endif %}{% if participants[cid] ?? 0 %} · {{ participants[cid] }} dabei{% endif %}</span>
                         </a>
                     </li>
                 {% endfor %}
@@ -75,6 +133,7 @@
         </section>
     {% endif %}
 
+    {% if not showMosaic %}
     <section aria-labelledby="fresh-title">
         <div class="bunting-row">{{ deco.bunting(220) }}</div>
         <div class="section-row">
@@ -94,4 +153,7 @@
             </div>
         {% endif %}
     </section>
+    {% endif %}
+
+    {{ include('guest/_privacy_note.html.twig', {link: true}) }}
 {% endblock %}

@@ -4,8 +4,18 @@
     <section class="card qr-card" aria-labelledby="qr-title">
         <h2 id="qr-title" class="headline-sm">QR-Code für die Tische</h2>
         {% if wedding.access.openLinkEnabled %}
-            <img class="qr" src="{{ path('admin_access_qr', {slug: wedding.slug}) }}" alt="QR-Code zum Beitreten" width="220" height="220">
-            <p class="muted break">{{ joinUrl }}</p>
+            <div class="qr-pair">
+                <figure class="qr-pair__item">
+                    <img class="qr" src="{{ path('admin_access_qr', {slug: wedding.slug}) }}" alt="QR-Code zum Beitreten" width="220" height="220">
+                    <figcaption class="muted break">{{ joinUrl }}</figcaption>
+                </figure>
+                {% if lanJoinUrl %}
+                    <figure class="qr-pair__item qr-pair__item--lan">
+                        <img class="qr" src="{{ path('admin_access_qr', {slug: wedding.slug, netz: 'lan'}) }}" alt="QR-Code zum Testen im Heimnetz" width="220" height="220">
+                        <figcaption><span class="badge">Nur zum Testen im Heimnetz</span><span class="muted break">{{ lanJoinUrl }}</span></figcaption>
+                    </figure>
+                {% endif %}
+            </div>
             <div class="button-row">
                 <a class="button button--primary" href="{{ path('admin_access_qr', {slug: wedding.slug}) }}" download="{{ wedding.slug }}-qr.svg">QR-Code herunterladen</a>
                 <form method="post" action="{{ path('admin_access_link', {slug: wedding.slug}) }}" data-turbo-confirm="Neuen QR-Code erzeugen? Bereits gedruckte Codes funktionieren dann nicht mehr für neue Gäste.">{{ include('admin/_csrf.html.twig') }}<input type="hidden" name="action" value="neu"><button class="button button--secondary" type="submit">Neuen Code erzeugen</button></form>

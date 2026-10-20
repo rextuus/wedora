@@ -309,7 +309,9 @@ export default class extends Controller {
         item.node.dataset.state = state;
         item.node.querySelector('[data-role=status]').textContent = text;
         item.node.querySelector('[data-role=retry]').hidden = true;
-        item.node.querySelector('[data-role=cancel]').hidden = ['done', 'processing', 'finalizing'].includes(state);
+        const cancel = item.node.querySelector('[data-role=cancel]');
+        cancel.hidden = ['done', 'processing', 'finalizing'].includes(state);
+        cancel.textContent = state === 'error' ? 'Entfernen' : 'Abbrechen';
         item.node.setAttribute('aria-busy', String(['uploading', 'finalizing', 'processing', 'retrying'].includes(state)));
         this.updateSummary();
     }
@@ -344,7 +346,7 @@ function formatDuration(seconds) {
 }
 
 function formatBytes(bytes) {
-    return bytes >= 1024 ** 3
-        ? `${(bytes / 1024 ** 3).toFixed(1).replace('.', ',')} GB`
-        : `${Math.max(1, Math.round(bytes / 1024 ** 2))} MB`;
+    if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(1).replace('.', ',')} GB`;
+    if (bytes >= 1024 ** 2) return `${Math.round(bytes / 1024 ** 2)} MB`;
+    return `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }

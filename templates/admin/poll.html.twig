@@ -1,0 +1,67 @@
+{% extends 'admin/_layout.html.twig' %}
+
+{% block content %}
+    <a class="text-link back-link" href="{{ path('admin_challenges', {slug: wedding.slug}) }}">‹ Alle Aufgaben</a>
+    <section class="card">
+        <h2 class="headline-sm">Umfrage „Wer von beiden?“</h2>
+        <p class="muted">Die Gäste schätzen ein, wer von euch beiden etwas mehr oder weniger macht – {{ names.first }} oder {{ names.second }}. Die Namen kommen aus dem Titel der Hochzeit. Bewusst andere Fragen als beim klassischen Schuhspiel am Abend. Erledigt ist die Aufgabe für einen Gast, wenn er alle Fragen beantwortet hat.</p>
+        {% if not challenge %}
+            <form method="post" action="{{ path('admin_challenge_create', {slug: wedding.slug}) }}" class="notice">
+                {{ include('admin/_csrf.html.twig') }}<input type="hidden" name="template" value="poll">
+                Die Umfrage ist noch keine Aufgabe – Gäste sehen sie erst, wenn du sie unter „Aufgaben“ anlegst.
+                <button class="button button--primary" type="submit">Als Aufgabe anlegen</button>
+            </form>
+        {% elseif not visible %}
+            <p class="notice">Gäste sehen die Umfrage noch nicht. Dafür muss die Aufgabe „{{ challenge.title }}“ eingeschaltet sein{% if not wedding.module(enum('App\\Wedding\\ModuleType').Challenges).enabled %}, das Modul „Aufgaben“ aktiv{% endif %} und es mindestens eine Frage geben.</p>
+        {% else %}
+            <p class="muted">Gäste sehen die Umfrage als Aufgabe „{{ challenge.title }}“. Punkte, Zeitfenster und Sichtbarkeit stellst du unter <a href="{{ path('admin_challenges', {slug: wedding.slug}) }}">Aufgaben</a> ein.</p>
+        {% endif %}
+        <form method="post" action="{{ path('admin_poll_settings', {slug: wedding.slug}) }}" class="stack">
+            {{ include('admin/_csrf.html.twig') }}
+            <label class="toggle"><input type="checkbox" name="live_results"{% if wedding.showsPollLiveResults() %} checked{% endif %}> Ergebnisse für Gäste anzeigen (nach der eigenen Stimme)</label>
+            <button class="button button--secondary" type="submit">Speichern</button>
+        </form>
+    </section>
+
+    {% if templates is not empty %}
+        <section class="card">
+            <h2 class="headline-sm">Fragen übernehmen</h2>
+            <div class="button-row">
+                {% for t in templates %}
+                    <form method="post" action="{{ path('admin_poll_create', {slug: wedding.slug}) }}">{{ include('admin/_csrf.html.twig') }}<input type="hidden" name="text" value="{{ t }}"><button class="chip chip--filter chip--text" type="submit">+ {{ t }}</button></form>
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+
+    <section class="card">
+        <h2 class="headline-sm">Eigene Frage</h2>
+        <form method="post" action="{{ path('admin_poll_create', {slug: wedding.slug}) }}" class="stack">
+            {{ include('admin/_csrf.html.twig') }}
+            <div class="field"><label>Frage<input name="text" maxlength="140" placeholder="Wer …?" required></label></div>
+            <button class="button button--primary" type="submit">Hinzufügen</button>
+        </form>
+    </section>
+
+    <h2 class="headline-md">Fragen ({{ questions|length }})</h2>
+    {% for q in questions %}
+        {% set counts = tally[q.id.toRfc4122] %}
+        {% set total = counts.first + counts.second %}
+        <section class="card" id="frage-{{ q.id }}">
+            <div class="card__head">
+                <span class="headline-sm">{{ loop.index }}. {{ q.text }}</span>
+                <span class="muted">{{ names.first }} {{ counts.first }} · {{ names.second }} {{ counts.second }}</span>
+            </div>
+            {% if total %}
+                {% set pFirst = (counts.first / total * 100)|round %}
+                <div class="poll-bar"><span class="poll-bar__first" style="width: {{ pFirst }}%"></span></div>
+            {% endif %}
+            <form method="post" action="{{ path('admin_poll_update', {slug: wedding.slug, id: q.id}) }}" class="button-row">
+                {{ include('admin/_csrf.html.twig') }}
+                <button class="button button--secondary button--danger" type="submit" name="action" value="loeschen" data-turbo-confirm="Frage samt Stimmen löschen?">Löschen</button>
+            </form>
+        </section>
+    {% else %}
+        <p class="muted">Noch keine Fragen – übernimm oben ein paar Vorschläge.</p>
+    {% endfor %}
+{% endblock %}

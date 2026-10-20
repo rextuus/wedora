@@ -26,8 +26,43 @@ Dafür verlässt ein Gesichtsfoto den eigenen Server. Das ist die erste Stelle, 
   5. Das Selfie wird danach **immer** gelöscht, auch bei Fehlern.
   6. Fehlgeschlagene Zeichnungen werden nicht automatisch wiederholt; der Gast kann es erneut versuchen.
 - **Begrenzung:** höchstens 5 Zeichnungen pro Gast und Tag (Rate-Limiter `guest_portrait`), weil jede Zeichnung beim Anbieter Geld kostet.
-- **Sichtbarkeit:** Nur der Gast selbst sieht sein Porträt (`/h/{slug}/portraet/bild` liefert immer nur das eigene). Brautpaar und Verwaltung sehen es nicht.
+- **Sichtbarkeit:** Standardmäßig sieht nur der Gast selbst sein Porträt (`/h/{slug}/portraet/bild` liefert immer nur das eigene). Brautpaar und Verwaltung sehen es nie.
+- **Gästewand (Ergänzung 20.10., auf Wunsch des Betreibers):** Ein Gast kann sein Porträt freigeben (`guest.portrait_shared`, Standard aus, jederzeit widerrufbar; Löschen des Porträts beendet die Freigabe). Freigegebene Porträts erscheinen auf der Seite „Wer ist alles da?“ (`/h/{slug}/gaeste`) und klein neben Fotos und Gästebuch-Einträgen. Sehen darf sie nur, wer selbst ein freigegebenes Porträt hat (wie bei den Drink-Videos). Das prüft `PortraitWall::canSee` auch bei der Bildadresse `/h/{slug}/portraet/von/{gast}`. Gesperrte Gäste erscheinen nicht. Die Einwilligung beim Selfie betrifft nur die Übertragung an Google; die Freigabe ist ein eigener, ausdrücklicher Schritt.
 - **Ablage:** `<MEDIA_ROOT>/portraits/<hochzeit>/<gast>.png`.
+
+## Ergänzung: Stile und Aufgaben-Karte (19.10.2026)
+
+- **Stile:** Feine Linien (Standard, transparent, per CSS in der Akzentfarbe eingefärbt), Aquarell, Bleistift, Comic, Pop-Art (farbig, rund zugeschnitten). Das Brautpaar wählt in den Einstellungen, welche Stile angeboten werden (`Wedding::portraitStyles`, Standard nur „Feine Linien“). Der Server lehnt nicht angebotene Stile ab, bevor etwas an Gemini geht. Prompts stehen im Enum `PortraitStyle`.
+- **Vorschaubilder** der Stile liegen unter `assets/images/portrait-styles/`. Sie wurden einmalig mit Gemini von einer erfundenen Person erzeugt, nicht von einem echten Gast.
+- **Als Aufgabe:** Unter „Aufgaben“ erscheint eine Karte „Lass dich zeichnen“ mit „Erledigt“, sobald ein Porträt da ist. Es ist bewusst keine echte Upload-Aufgabe, weil das Selfie nicht in die Galerie soll.
+- **Einstieg:** Gibt es eine First-Drink-Aufgabe, führt der Beitritt zuerst dorthin. Das Porträt wird dann über Startseite und Aufgaben angeboten statt direkt nach dem Namen.
+
+## Ergänzung: Zufälliges Accessoire (20.10.2026)
+
+- Jedes Porträt bekommt zufällig ein Accessoire, im selben Stil mitgezeichnet: Sonnenbrille, Partyhut, Blumenkranz, Fliege, Zylinder, Herzbrille, Krone oder Konfettiregen. Ein neues Porträt bekommt möglichst ein anderes als das letzte.
+- Schalter pro Hochzeit „Zufälliges Accessoire mitzeichnen“, Standard **an**.
+- Das gezogene Accessoire steht am Gast (`portrait_gadget`) und wird auf der Porträt-Seite als „Überraschung: mit Partyhut“ gezeigt.
+- Der Prompt schneidet jetzt ausdrücklich knapp unter den Schultern ab. Bei Selfies wurde sonst gelegentlich der ausgestreckte Arm mitgezeichnet.
+
+## Ergänzung: Accessoire aus einer Frage (20.10.2026)
+
+- Das Accessoire ist nicht mehr reiner Zufall. Beim Selfie erscheint zufällig eine von fünf kurzen Fragen (`PortraitQuestions`), etwa „Woher kennst du das Brautpaar?“, „Was wünschst du den beiden?“ oder „Wen kennst du länger?“ (mit den Namen aus dem Hochzeitstitel).
+- Jede Antwort steht für ein bestimmtes Accessoire, zum Beispiel Familie → Krone. Für den Gast bleibt es eine Überraschung.
+- Ohne gültige Antwort lehnt der Server ab. Das passiert, bevor das Tageslimit zählt und bevor etwas an Gemini geht.
+- Die Antwort wird am Gast gespeichert (`portrait_answer`). Den Gästen wird **nicht** gesagt, dass sie das Accessoire bestimmt; sie sehen nur „Überraschung: mit Krone“.
+- Sind die Accessoires ausgeschaltet, gibt es keine Frage.
+
+## Ergänzung: Kostenbremse und hängende Aufträge (20.10.2026)
+
+- **Kostenbremse:** Jede angeforderte Zeichnung wird gezählt (`ai_image_usage`, ohne personenbezogene Daten).
+  - Harte Obergrenzen pro Tag und Monat über alle Hochzeiten (`GEMINI_DAILY_LIMIT`, Standard 50; `GEMINI_MONTHLY_LIMIT`, Standard 300).
+  - Ist eine Grenze erreicht, lehnt der Server ab, bevor etwas an Gemini geht. Tageslimit 0 ist der Notaus.
+  - Die Grenzen stellt die Plattformadministration in der Verwaltung ein (`ai_budget_setting`, sofort wirksam). Die Umgebungsvariablen sind nur Ausgangswerte. Brautpaar-Konten können sie nicht ändern.
+  - Zusätzlich gilt das bisherige Limit von 5 Porträts pro Gast und Tag.
+- **Hängende Aufträge:** Ein Absturz des Workers mitten im Auftrag ließ ein Porträt bis zu einer Stunde auf „wird gezeichnet“ stehen (Neuzustellung der Warteschlange).
+  - Jetzt wird nach 15 Minuten neu zugestellt.
+  - Porträts gelten nach 3 Minuten „in Arbeit“ als fehlgeschlagen: Der Gast sieht „Nochmal versuchen“, und das Selfie wird gelöscht.
+  - Geprüft wird beim Aufruf der Startseite bzw. Porträt-Seite und stündlich im Aufräumen.
 
 ## Löschung und Export
 

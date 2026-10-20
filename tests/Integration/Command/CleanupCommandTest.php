@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Command;
 
+use App\Guest\Entity\GuestReentryToken;
 use App\Media\Entity\Export;
 use App\Media\Entity\Upload;
 use App\Media\MediaType;
@@ -40,8 +41,10 @@ final class CleanupCommandTest extends IntegrationTestCase
         );
         $fresh = new Upload($guest, ModuleType::Gallery, MediaType::Photo, Visibility::AllGuests, 10, $now);
         $oldExport = new Export($wedding, null, $now->modify('-8 days'));
+        $staleLink = new GuestReentryToken($guest, str_repeat('a', 43), 'geheim', $now->modify('-1 minute'));
+        $liveLink = new GuestReentryToken($guest, str_repeat('b', 43), 'geheim', $now->modify('+10 minutes'));
         $newExport = new Export($wedding, null, $now);
-        foreach ([$expired, $fresh, $oldExport, $newExport] as $entity) {
+        foreach ([$expired, $fresh, $oldExport, $newExport, $staleLink, $liveLink] as $entity) {
             $em->persist($entity);
         }
         $em->flush();
@@ -64,5 +67,8 @@ final class CleanupCommandTest extends IntegrationTestCase
         self::assertNotNull(self::service(UploadRepository::class)->find($fresh->getId()));
         self::assertNull(self::service(ExportRepository::class)->find($oldExport->getId()));
         self::assertNotNull(self::service(ExportRepository::class)->find($newExport->getId()));
+        $links = $em->getRepository(GuestReentryToken::class);
+        self::assertSame(1, $links->count([]), 'Nur der noch gültige Einmal-Link bleibt.');
+        self::assertNotNull($links->findOneBy(['tokenHash' => GuestReentryToken::hash(str_repeat('b', 43))]));
     }
 }

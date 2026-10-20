@@ -12,16 +12,18 @@
          data-upload-module-value="{{ module.value }}"
          data-upload-challenge-value="{{ challenge ? challenge.id : '' }}"
          class="stack">
-        <header class="section-header">
+        {% set headerMotif = challenge ? challenge_motif(challenge.title) : (module.value == 'guestbook' ? 'envelope' : 'camera') %}
+        <header class="section-header section-header--motif">
+            <span class="section-header__motif">{{ deco.motif(headerMotif, 92) }}</span>
             {% if challenge %}
-                <p class="overline">{{ ui.icon('flag', 14) }} Aufgabe</p>
+                <p class="overline">{{ ui.icon('sparkle', 15) }} Aufgabe</p>
                 <h1 class="headline-lg">{{ challenge.title }}</h1>
                 {% if challenge.description %}<p class="lead">{{ challenge.description }}</p>{% endif %}
+                {% if is_drink(challenge) %}<p class="muted">Nur ein Video pro Person: Ein neues ersetzt dein bisheriges.</p>{% endif %}
             {% elseif module.value == 'guestbook' %}
                 <h1 class="headline-lg">Ein <em>Gruß</em> für das Brautpaar</h1>
                 <p class="lead">Foto oder Video für das Gästebuch</p>
             {% else %}
-                <span class="upload-motif">{{ deco.motif('polaroids', 76) }}</span>
                 <h1 class="headline-lg">Teile deine <em>Momente</em></h1>
                 <p class="lead">Fotos und kurze Videos vom heutigen Tag</p>
             {% endif %}
@@ -47,9 +49,9 @@
 
                 <label class="button button--primary button--block file-button">
                     {{ ui.icon(camera ? 'camera' : 'upload', 20) }} {{ camera ? 'Kamera öffnen' : 'Dateien auswählen' }}
-                    <input type="file" class="visually-hidden"{% if not camera %} multiple{% endif %}
+                    <input type="file" class="visually-hidden"{% if not camera and not (challenge and is_drink(challenge)) %} multiple{% endif %}
                            accept="{{ challenge and challenge.mediaType.value == 'photo' ? 'image/*' : (challenge and challenge.mediaType.value == 'video' ? 'video/*' : 'image/jpeg,image/png,image/webp,image/heic,image/heif,video/mp4,video/quicktime,video/webm,video/3gpp') }}"
-                           {% if camera %}capture="environment"{% endif %}
+                           {% if camera %}capture="{{ camera }}"{% endif %}
                            data-upload-target="input" data-action="change->upload#choose">
                 </label>
 
@@ -80,4 +82,5 @@
 
         <p class="center"><a class="text-link" href="{{ path('guest_album', {slug: wedding.slug}) }}">Zu meinem Album</a></p>
     </div>
+    {{ include('guest/_privacy_note.html.twig', {link: true}) }}
 {% endblock %}

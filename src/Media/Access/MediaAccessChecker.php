@@ -12,5 +12,8 @@ namespace App\Media\Access;
  */
 interface MediaAccessChecker
 {
-    public function canView(string $subject, string $mediaId): bool;
+    /**
+     * @param string $variant angefragte Variante (z. B. „video.mp4“, „image/display“, „image/tiny“)
+     */
+    public function canView(string $subject, string $mediaId, string $variant = 'image/display'): bool;
 }

@@ -8,10 +8,12 @@ use App\Challenge\Entity\Challenge;
 use App\Challenge\Repository\ChallengeRepository;
 use App\Demo\DemoSeeder;
 use App\Demo\SeedDemoCommand;
-use App\Guestbook\Entity\GuestbookEntry;
 use App\Guest\Entity\Guest;
+use App\Guestbook\Entity\GuestbookEntry;
 use App\Media\Entity\Media;
 use App\Media\Repository\MediaRepository;
+use App\Poll\CouplePoll;
+use App\Poll\Repository\PollQuestionRepository;
 use App\Tests\Integration\IntegrationTestCase;
 use App\Tests\Support\Fixtures;
 use App\Wedding\Repository\WeddingRepository;
@@ -85,13 +87,24 @@ final class ImportDemoMediaCommandTest extends IntegrationTestCase
         self::assertNotNull($wedding);
         self::assertSame('Larissa & Tim', $wedding->getTitle());
         self::assertTrue($wedding->arePortraitsEnabled());
-        self::assertSame(['First Drink'], array_map(
-            static fn(Challenge $c): string => $c->getTitle(),
-            self::service(ChallengeRepository::class)->forWedding($wedding),
-        ));
+        self::assertSame(
+            ['First Drink', 'Last Drink', 'Wer von beiden?'],
+            array_map(
+                static fn(Challenge $c): string => $c->getTitle(),
+                self::service(ChallengeRepository::class)->forWedding($wedding),
+            ),
+        );
         self::assertCount(1, self::service(MediaRepository::class)->findBy(['wedding' => $wedding]));
+        self::assertTrue(self::service(CouplePoll::class)->isVisibleIn($wedding));
+        $questions = self::service(PollQuestionRepository::class)->forWedding($wedding);
+        self::assertCount(6, $questions);
         $em = self::service(EntityManagerInterface::class);
-        self::assertSame(count(SeedDemoCommand::GUESTBOOK), $em->getRepository(GuestbookEntry::class)->count(['author' => $em->getRepository(Guest::class)->findBy(['wedding' => $wedding])]));
+        self::assertSame(
+            count(SeedDemoCommand::GUESTBOOK),
+            $em->getRepository(GuestbookEntry::class)->count(['author' => $em->getRepository(Guest::class)->findBy([
+                'wedding' => $wedding,
+            ])]),
+        );
 
         // Ohne --reset bleibt die vorhandene Hochzeit unangetastet.
         self::assertSame(1, $seed->execute(['directory' => $this->dir, '--slug' => $slug]));

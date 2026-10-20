@@ -57,7 +57,7 @@ final readonly class ProtectedMediaController
             return self::status(Response::HTTP_FORBIDDEN);
         }
 
-        if (!$this->accessChecker->canView($access->subject, $id->value)) {
+        if (!$this->accessChecker->canView($access->subject, $id->value, $variant)) {
             $this->logger->info('Medienzugriff abgelehnt: keine Berechtigung.', ['media' => $id->value]);
 
             return self::status(Response::HTTP_FORBIDDEN);

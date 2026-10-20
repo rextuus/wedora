@@ -19,14 +19,34 @@ final readonly class PublicLinks
         private UrlGeneratorInterface $urls,
         #[Autowire('%env(DEFAULT_URI)%')]
         private string $publicBaseUrl,
+        #[Autowire('%env(LAN_BASE_URL)%')]
+        private string $lanBaseUrl = '',
     ) {}
+
+    /**
+     * Derselbe Beitrittslink über die Adresse im Heimnetz – nur in der lokalen Entwicklung (LAN_BASE_URL),
+     * damit man mit dem Handy testen kann. Sonst null.
+     */
+    public function lanJoin(Wedding $wedding): ?string
+    {
+        if ('' === $this->lanBaseUrl || rtrim($this->lanBaseUrl, '/') === rtrim($this->publicBaseUrl, '/')) {
+            return null;
+        }
+
+        return rtrim($this->lanBaseUrl, '/') . $this->joinPath($wedding);
+    }
 
     public function join(Wedding $wedding): string
     {
-        return $this->absolute($this->urls->generate('guest_join', [
+        return $this->absolute($this->joinPath($wedding));
+    }
+
+    private function joinPath(Wedding $wedding): string
+    {
+        return $this->urls->generate('guest_join', [
             'slug' => $wedding->getSlug(),
             'k' => $wedding->access()->openLinkToken(),
-        ]));
+        ]);
     }
 
     public function invitation(#[SensitiveParameter] string $token): string

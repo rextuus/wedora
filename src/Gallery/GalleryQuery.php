@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Gallery;
 
+use App\Challenge\Entity\Challenge;
 use App\Guest\Entity\Guest;
 use App\Media\Entity\Media;
 use App\Media\MediaType;
@@ -78,6 +79,25 @@ final readonly class GalleryQuery
             ->base($guest, $before, $limit)
             ->andWhere('m.uploaderGuest = :guest')
             ->setParameter('guest', $guest->getId(), UuidType::NAME);
+
+        return self::result($qb);
+    }
+
+    /**
+     * Eigene Beiträge zu einer Aufgabe (wie mine(), z. B. das eigene First-Drink-Video).
+     *
+     * @phpstan-impure liest den aktuellen Datenbankstand
+     *
+     * @return list<Media>
+     */
+    public function mineFor(Guest $guest, Challenge $challenge, int $limit = 24): array
+    {
+        $qb = $this
+            ->base($guest, null, $limit)
+            ->andWhere('m.uploaderGuest = :guest')
+            ->andWhere('m.challenge = :challenge')
+            ->setParameter('guest', $guest->getId(), UuidType::NAME)
+            ->setParameter('challenge', $challenge->getId(), UuidType::NAME);
 
         return self::result($qb);
     }

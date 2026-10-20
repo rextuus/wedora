@@ -7,10 +7,10 @@ namespace App\Account\Command;
 use App\Account\Entity\User;
 use App\Account\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\Console\Attribute\Argument;
 use Symfony\Component\Console\Attribute\AsCommand;
-use Symfony\Component\Console\Attribute\Option;
+use Symfony\Component\Console\Attribute\MapInput;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
@@ -23,15 +23,9 @@ final readonly class CreateUserCommand
         private UserPasswordHasherInterface $hasher,
     ) {}
 
-    public function __invoke(
-        SymfonyStyle $io,
-        #[Argument(description: 'E-Mail-Adresse')]
-        string $email,
-        #[Argument(description: 'Anzeigename')]
-        string $name,
-        #[Option(description: 'Als Plattformadministration anlegen')]
-        bool $platformAdmin = false,
-    ): int {
+    public function __invoke(SymfonyStyle $io, InputInterface $input, #[MapInput] CreateUserInput $args): int
+    {
+        [$email, $name, $platformAdmin] = [$args->email, $args->name, $args->platformAdmin];
         if (false === filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $io->error('Ungültige E-Mail-Adresse.');
 
@@ -44,9 +38,8 @@ final readonly class CreateUserCommand
             return Command::FAILURE;
         }
 
-        // @mago-expect analysis:mixed-assignment
-        $password = $io->askHidden('Passwort (mind. 12 Zeichen)');
-        if (!is_string($password) || mb_strlen($password) < 12) {
+        $password = PasswordPrompt::read($io, $input, $args->passwordStdin, 'Passwort (mind. 12 Zeichen)');
+        if (mb_strlen($password) < 12) {
             $io->error('Das Passwort muss mindestens 12 Zeichen haben.');
 
             return Command::INVALID;

@@ -40,6 +40,7 @@ final class AccessController extends AdminController
 
         return $this->page('admin/access.html.twig', $wedding, 'access', [
             'joinUrl' => $this->joinUrl($wedding),
+            'lanJoinUrl' => $this->links->lanJoin($wedding),
             'invitations' => $this->invitations->findBy(['wedding' => $wedding], ['createdAt' => 'DESC']),
             'guests' => $guests->findBy(['wedding' => $wedding], ['createdAt' => 'DESC']),
             'newInvitationUrl' => self::takeInvitationUrl($request),
@@ -50,9 +51,17 @@ final class AccessController extends AdminController
      * QR-Code des Beitrittslinks als SVG (zum Ausdrucken).
      */
     #[Route('/qr.svg', name: 'admin_access_qr', methods: ['GET'])]
-    public function qr(string $slug): Response
+    public function qr(string $slug, Request $request): Response
     {
         $wedding = $this->wedding($slug, WeddingPermission::ManageAccess);
+        // ?netz=lan: Test-Code mit der Adresse im Heimnetz (nur lokal, siehe PublicLinks::lanJoin).
+        $url = 'lan' === $request->query->getString('netz')
+            ? $this->links->lanJoin($wedding)
+            : $this->joinUrl($wedding);
+        if (null === $url) {
+            throw $this->createNotFoundException();
+        }
+
         $options = [
             'outputInterface' => QRMarkupSVG::class,
             'outputBase64' => false,
@@ -61,7 +70,7 @@ final class AccessController extends AdminController
         ];
 
         // @mago-expect analysis:mixed-assignment
-        $svg = new QRCode($options)->render($this->joinUrl($wedding));
+        $svg = new QRCode($options)->render($url);
 
         return new Response(is_string($svg) ? $svg : '', Response::HTTP_OK, [
             'Content-Type' => 'image/svg+xml',

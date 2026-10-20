@@ -1,0 +1,13 @@
+{% extends 'guest/_layout.html.twig' %}
+
+{% block title %}{{ wedding.title }}{% endblock %}
+
+{% block content %}
+    <section class="card reentry" data-controller="reentry"
+             data-reentry-url-value="{{ path('guest_app_reentry_login', {slug: wedding.slug}) }}"
+             data-reentry-home-value="{{ path('guest_home', {slug: wedding.slug}) }}">
+        <p class="lead">Einen Moment, {{ wedding.title }} öffnet sich …</p>
+        <p class="muted" data-reentry-target="error" hidden>Dieser Link ist abgelaufen oder wurde schon benutzt. Öffne die Hochzeit noch einmal in Safari (dort bist du weiter angemeldet) und lege sie neu auf den Home-Bildschirm.</p>
+        <noscript><a class="button button--primary" href="{{ path('guest_home', {slug: wedding.slug}) }}">Weiter</a></noscript>
+    </section>
+{% endblock %}

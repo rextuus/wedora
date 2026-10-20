@@ -2,8 +2,11 @@
 
 {% block title %}Zugang über Einladung{% endblock %}
 
+{% import 'components/ornament.html.twig' as deco %}
+
 {% block content %}
-    <header class="page-header">
+    <header class="page-header page-header--motif">
+        <span class="page-header__motif">{{ deco.motif('envelope', 96) }}</span>
         <h1 class="display">Schön, dass du hier bist</h1>
         <p class="tagline">Der Zugang erfolgt über eure Einladung</p>
     </header>

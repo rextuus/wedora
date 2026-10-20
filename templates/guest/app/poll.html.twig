@@ -1,0 +1,64 @@
+{% extends 'guest/app/_layout.html.twig' %}
+{% import 'components/icon.html.twig' as ui %}
+{% import 'components/ornament.html.twig' as deco %}
+
+{% block title %}Wer von beiden? – {{ wedding.title }}{% endblock %}
+{% block section %}Umfrage{% endblock %}
+
+{% block content %}
+    <a class="text-link back-link" href="{{ path('guest_challenges', {slug: wedding.slug}) }}">{{ ui.icon('back', 14) }} Alle Aufgaben</a>
+
+    <header class="section-header section-header--motif">
+        <span class="section-header__motif">{{ deco.motif('balloons', 92) }}</span>
+        <p class="overline">Aufgabe · Umfrage{% if wedding.areChallengePointsEnabled() and challenge.points %} · {{ challenge.points }} Punkte{% endif %}</p>
+        <h1 class="headline-lg">Wer von <em>beiden</em> …?</h1>
+        <p class="lead">Was meinst du: {{ names.first }} oder {{ names.second }}? Tipp an, und schau, wie die anderen Gäste die beiden einschätzen.</p>
+        {% if done %}<p class="status status--done">{{ ui.icon('check', 14) }} Erledigt</p>{% endif %}
+    </header>
+
+    {% if not challenge.hasStartedAt(now) %}
+        <p class="notice">{{ ui.icon('lock', 16) }} Abstimmen kannst du ab {{ challenge.startsAt|date('H:i') }} Uhr.</p>
+    {% elseif challenge.hasEndedAt(now) %}
+        <p class="notice">Die Umfrage ist beendet.</p>
+    {% endif %}
+
+    <ol class="poll-list">
+        {% for q in questions %}
+            {% set qid = q.id.toRfc4122 %}
+            {% set mine = votes[qid] ?? null %}
+            {% set counts = tally[qid] %}
+            {% set total = counts.first + counts.second %}
+            <li>
+                <turbo-frame id="frage-{{ qid }}">
+                    <article class="card poll-q">
+                        <p class="overline">Frage {{ loop.index }}</p>
+                        <h2 class="poll-q__text">{{ q.text }}</h2>
+
+                        <form method="post" action="{{ path('guest_poll_vote', {slug: wedding.slug, id: qid}) }}" class="poll-choices">
+                            <input type="hidden" name="_token" value="{{ csrf_token('guest-action') }}">
+                            {% for choice in enum('App\\Poll\\PollChoice').cases() %}
+                                <button type="submit" name="choice" value="{{ choice.value }}"
+                                        class="poll-choice{{ mine == choice ? ' is-mine' : '' }}"
+                                        aria-pressed="{{ mine == choice ? 'true' : 'false' }}"
+                                        {% if not canVote %}disabled{% endif %}>
+                                    {{ names.name(choice) }}
+                                </button>
+                            {% endfor %}
+                        </form>
+
+                        {% if mine and wedding.showsPollLiveResults() and total %}
+                            {% set pFirst = (counts.first / total * 100)|round %}
+                            <div class="poll-bar" role="img" aria-label="{{ names.first }} {{ pFirst }} %, {{ names.second }} {{ 100 - pFirst }} %">
+                                <span class="poll-bar__first" style="width: {{ pFirst }}%"></span>
+                            </div>
+                            <p class="poll-bar__legend"><span>{{ names.first }} · {{ pFirst }} %</span><span>{{ 100 - pFirst }} % · {{ names.second }}</span></p>
+                            <p class="muted">{{ total }} {{ total == 1 ? 'Stimme' : 'Stimmen' }}</p>
+                        {% elseif mine %}
+                            <p class="muted">Deine Stimme: {{ names.name(mine) }}. Das Ergebnis zeigt euch das Brautpaar.</p>
+                        {% endif %}
+                    </article>
+                </turbo-frame>
+            </li>
+        {% endfor %}
+    </ol>
+{% endblock %}

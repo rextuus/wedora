@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Guest\Controller;
 
+use App\Challenge\WelcomeMission;
 use App\Guest\Entity\Guest;
 use App\Guest\Form\DisplayNameType;
 use App\Guest\Form\WeddingPasswordType;
@@ -40,6 +41,7 @@ final class JoinController extends AbstractController
         private readonly EntityManagerInterface $em,
         private readonly ClockInterface $clock,
         private readonly PortraitService $portraits,
+        private readonly WelcomeMission $welcomeMission,
     ) {}
 
     #[Route('/h/{slug}/join', name: 'guest_join', requirements: ['slug' => Wedding::SLUG_PATTERN], methods: ['GET'])]
@@ -177,10 +179,16 @@ final class JoinController extends AbstractController
             $this->em->flush();
             $this->flow->clear($wedding);
 
-            // Zu Beginn das Porträt anbieten (überspringbar), sofern das Brautpaar es eingeschaltet hat.
-            $response = $this->portraits->isOfferedTo($wedding)
-                ? $this->redirectToRoute('guest_portrait', ['slug' => $slug, 'willkommen' => 1])
-                : $this->redirectToRoute('guest_home', ['slug' => $slug]);
+            // Nach dem Namen direkt zur ersten Aufgabe (First Drink); ohne sie das Porträt-Angebot, sonst Startseite.
+            $response = match (true) {
+                null !== $this->welcomeMission->firstDrink($wedding, $this->now())
+                    => $this->redirectToRoute('guest_welcome', ['slug' => $slug]),
+                $this->portraits->isOfferedTo($wedding) => $this->redirectToRoute('guest_portrait', [
+                    'slug' => $slug,
+                    'willkommen' => 1,
+                ]),
+                default => $this->redirectToRoute('guest_home', ['slug' => $slug]),
+            };
             $response->headers->setCookie(GuestCookie::create($guest, $secret, $request));
 
             return $response;

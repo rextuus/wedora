@@ -23,14 +23,6 @@ use Symfony\Component\Uid\Uuid;
 #[AsMessageHandler]
 final readonly class CreatePortraitHandler
 {
-    public const string PROMPT =
-        'Redraw the main person in this photo as a minimal portrait illustration. '
-            . 'Head and shoulders only, centered, facing the viewer, the figure filling about two thirds of the image; '
-            . 'leave out arms, hands, phones and everything in the background. '
-            . 'Fine single-weight black ink line drawing on a pure white background, hand-drawn, elegant wedding stationery style, '
-            . 'few confident continuous lines, keep the recognizable hairstyle, glasses, beard or jewelry, friendly expression. '
-            . 'No shading, no hatching, no fill, no color, no text, no frame, generous white space.';
-
     public function __construct(
         private EntityManagerInterface $em,
         private ImageGenerator $generator,
@@ -56,8 +48,12 @@ final readonly class CreatePortraitHandler
                 throw new RuntimeException('Selfie nicht mehr vorhanden.');
             }
 
-            $drawing = $this->generator->generate(self::PROMPT, [ImageInput::fromFile($selfie, $mime)]);
-            $this->renderer->render($drawing->bytes, $output);
+            $style = $guest->getPortraitStyle();
+            $drawing = $this->generator->generate($style->prompt($guest->getPortraitGadget()), [ImageInput::fromFile(
+                $selfie,
+                $mime,
+            )]);
+            $this->renderer->render($drawing->bytes, $output, $style->isLineArt());
             $this->storage->savePortrait($guest, $output);
             $guest->portraitDrawn($this->now());
         } catch (RuntimeException $e) { // inkl. ImageGenerationFailed

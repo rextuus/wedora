@@ -6,33 +6,54 @@
 {% block section %}Aufgaben{% endblock %}
 
 {% block content %}
-    <header class="section-header">
+    <header class="section-header section-header--motif">
+        <span class="section-header__motif">{{ deco.motif('confetti', 92) }}</span>
         <p class="overline">{{ completed|length }} von {{ challenges|length }} erledigt</p>
         <h1 class="headline-lg">Foto-<em>Aufgaben</em></h1>
         {{ deco.sprig(110) }}
     </header>
 
-    {% if challenges is empty %}
+    {% if challenges is empty and not portraitOffered %}
         <div class="empty-state card">{{ deco.motif('camera', 72) }}<p class="lead">Das Brautpaar hat noch keine Aufgaben angelegt.</p></div>
     {% endif %}
 
     <ul class="challenge-list">
+        {# Das Porträt sieht aus wie jede andere Aufgabe: Motiv links, Titel, Status, Text, Button. #}
+        {% if portraitOffered %}
+            {% set drawn = guest.hasPortrait() %}
+            <li class="challenge-item card{{ drawn ? ' is-done' : '' }}">
+                <span class="challenge-item__motif">{{ deco.motif('pencil', 64) }}</span>
+                <div class="card__head">
+                    <h2><a href="{{ path('guest_portrait', {slug: wedding.slug}) }}">Lass dich zeichnen</a></h2>
+                    {% if drawn %}<span class="status status--done">{{ ui.icon('check', 14) }} Erledigt</span>{% else %}<span class="status status--pending">Offen</span>{% endif %}
+                </div>
+                <p>Ein Selfie, daraus wird eine Zeichnung{{ wedding.letsGuestsChoosePortraitStyle() ? ' – Stil frei wählbar.' : (wedding.portraitStyles()|length > 1 ? ' – der Stil ist eine Überraschung.' : '.') }}</p>
+                <p class="muted">Foto{% if drawn %} · Porträt fertig{% endif %}</p>
+                <a class="button {{ drawn ? 'button--secondary' : 'button--primary' }}" href="{{ path('guest_portrait', {slug: wedding.slug}) }}">{{ drawn ? 'Neues Porträt' : 'Mitmachen' }}</a>
+            </li>
+        {% endif %}
         {% for c in challenges %}
             {% set cid = c.id.toRfc4122 %}
             {% set done = completed[cid] ?? false %}
             <li class="challenge-item card{{ done ? ' is-done' : '' }}">
                 <span class="challenge-item__motif">{{ deco.motif(challenge_motif(c.title), 64) }}</span>
                 <div class="card__head">
-                    <h2><a href="{{ path('guest_challenge', {slug: wedding.slug, id: cid}) }}">{{ c.title }}</a></h2>
+                    {% set isPoll = c.mediaType.isPoll() %}
+                    {% set target = isPoll ? path('guest_poll', {slug: wedding.slug}) : path('guest_challenge', {slug: wedding.slug, id: cid}) %}
+                    <h2><a href="{{ target }}">{{ c.title }}</a></h2>
                     {% if done %}<span class="status status--done">{{ ui.icon('check', 14) }} Erledigt</span>
                     {% elseif not c.hasStartedAt(now) %}<span class="status">{{ ui.icon('lock', 14) }} Ab {{ c.startsAt|date('H:i') }} Uhr</span>
                     {% elseif c.hasEndedAt(now) %}<span class="status">Beendet</span>
                     {% else %}<span class="status status--pending">Offen</span>{% endif %}
                 </div>
                 {% if c.description %}<p>{{ c.description }}</p>{% endif %}
-                <p class="muted">{{ c.mediaType.label }}{% if wedding.areChallengePointsEnabled() and c.points %} · {{ c.points }} Punkte{% endif %}{% if participants[cid] ?? 0 %} · {{ participants[cid] }} {{ participants[cid] == 1 ? 'Gast hat' : 'Gäste haben' }} mitgemacht{% endif %}</p>
+                <p class="muted">{{ c.mediaType.label }}{% if isPoll and poll and not done %} · {{ poll.answered }} von {{ poll.total }} {{ poll.total == 1 ? 'Frage' : 'Fragen' }} beantwortet{% endif %}{% if wedding.areChallengePointsEnabled() and c.points %} · {{ c.points }} Punkte{% endif %}{% if participants[cid] ?? 0 %} · {{ participants[cid] }} {{ participants[cid] == 1 ? 'Gast hat' : 'Gäste haben' }} mitgemacht{% endif %}</p>
                 {% if c.acceptsAt(now) %}
-                    <a class="button {{ done ? 'button--secondary' : 'button--primary' }}" href="{{ path('guest_upload', {slug: wedding.slug, aufgabe: cid}) }}">{{ done ? 'Noch einen Beitrag' : 'Mitmachen' }}</a>
+                    {% if isPoll %}
+                        <a class="button {{ done ? 'button--secondary' : 'button--primary' }}" href="{{ target }}">{{ done ? 'Antworten ansehen' : 'Mitmachen' }}</a>
+                    {% else %}
+                        <a class="button {{ done ? 'button--secondary' : 'button--primary' }}" href="{{ path('guest_upload', {slug: wedding.slug, aufgabe: cid}) }}">{{ done ? (is_drink(c) ? 'Video ersetzen' : 'Noch einen Beitrag') : 'Mitmachen' }}</a>
+                    {% endif %}
                 {% endif %}
             </li>
         {% endfor %}

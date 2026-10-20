@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Admin\Controller;
 
 use App\Account\Repository\WeddingMemberRepository;
+use App\Ai\AiBudget;
 use App\Guest\Repository\GuestRepository;
 use App\Media\MediaType;
 use App\Media\Repository\MediaRepository;
@@ -28,14 +29,17 @@ final class DashboardController extends AdminController
     ) {}
 
     #[Route('/admin', name: 'app_admin', methods: ['GET'])]
-    public function index(WeddingMemberRepository $members, WeddingRepository $weddings): Response
+    public function index(WeddingMemberRepository $members, WeddingRepository $weddings, AiBudget $aiBudget): Response
     {
         $user = $this->account();
         $list = $user->isPlatformAdmin()
             ? $weddings->findBy([], ['createdAt' => 'DESC'])
             : array_map(static fn($m) => $m->getWedding(), $members->findBy(['user' => $user]));
 
-        return $this->page('admin/index.html.twig', null, 'index', ['weddings' => $list]);
+        return $this->page('admin/index.html.twig', null, 'index', [
+            'weddings' => $list,
+            'aiUsage' => $user->isPlatformAdmin() ? $aiBudget->usage() : null,
+        ]);
     }
 
     #[Route(

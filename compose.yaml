@@ -21,6 +21,8 @@ x-app: &app
     MEDIA_TOKEN_SECRET: ${MEDIA_TOKEN_SECRET:?Bitte make secrets ausführen}
     IMGPROXY_KEY: ${IMGPROXY_KEY:?Bitte make secrets ausführen}
     IMGPROXY_SALT: ${IMGPROXY_SALT:?Bitte make secrets ausführen}
+    # Nur lokal: Adresse im Heimnetz (aus WEB_LAN_IP/WEB_LAN_PORT) für einen zweiten QR-Code zum Testen mit dem Handy.
+    LAN_BASE_URL: ${WEB_LAN_IP:+http://${WEB_LAN_IP}:${WEB_LAN_PORT:-8181}}
   depends_on:
     database:
       condition: service_healthy
@@ -36,7 +38,7 @@ services:
 
   worker:
     <<: *app
-    command: ["php", "bin/console", "messenger:consume", "async", "--time-limit=3600", "--memory-limit=192M", "-vv"]
+    command: ["php", "bin/console", "messenger:consume", "async", "scheduler_default", "--time-limit=3600", "--memory-limit=192M", "-vv"]
     restart: unless-stopped
     # Videotranskodierung ist CPU-intensiv; Grenzen verhindern, dass die Web-Auslieferung leidet.
     deploy:
@@ -56,6 +58,9 @@ services:
       - caddy_data:/data
     ports:
       - "127.0.0.1:${WEB_PORT:-8180}:80"
+      # Optional fürs Handy im Heimnetz: WEB_LAN_IP=<eigene IP> (und WEB_LAN_PORT) in .env.docker.local.
+      # Ohne Angabe nur ein zweiter Port auf diesem Rechner – nichts wird nach außen geöffnet.
+      - "${WEB_LAN_IP:-127.0.0.1}:${WEB_LAN_PORT:-8181}:80"
     depends_on:
       - app
       - imgproxy

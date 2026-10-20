@@ -18,4 +18,21 @@
             </li>
         {% endfor %}
     </ul>
+
+    {% if aiUsage %}
+        <section class="card" aria-labelledby="ai-title">
+            <h2 id="ai-title" class="headline-sm">Kostenbremse für gezeichnete Porträts (Gemini)</h2>
+            <p class="muted">Gilt für alle Hochzeiten zusammen. Ist eine Grenze erreicht, wird nichts mehr an Gemini geschickt; Gäste sehen „für heute ausgeschöpft“. 0 schaltet das Zeichnen sofort ab.</p>
+            <p>Verbrauch: heute <strong>{{ aiUsage.today }} von {{ aiUsage.dailyLimit }}</strong>, diesen Monat <strong>{{ aiUsage.month }} von {{ aiUsage.monthlyLimit }}</strong>.</p>
+            <form method="post" action="{{ path('admin_ai_limits') }}" class="stack">
+                {{ include('admin/_csrf.html.twig') }}
+                <div class="form-grid">
+                    <div class="field"><label>Pro Tag höchstens<input type="number" name="daily_limit" min="0" max="10000" value="{{ aiUsage.dailyLimit }}" required></label></div>
+                    <div class="field"><label>Pro Monat höchstens<input type="number" name="monthly_limit" min="0" max="10000" value="{{ aiUsage.monthlyLimit }}" required></label></div>
+                </div>
+                <button class="button button--primary" type="submit">Grenzen speichern</button>
+            </form>
+            {% if not aiUsage.configured %}<p class="muted">Noch nicht geändert – es gelten die Standardwerte aus der Server-Konfiguration.</p>{% endif %}
+        </section>
+    {% endif %}
 {% endblock %}

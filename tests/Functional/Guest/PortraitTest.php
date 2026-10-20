@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Guest;
 
+use App\Account\WeddingPermission;
+use App\Guest\Portrait\PortraitGadget;
 use App\Guest\Portrait\PortraitStatus;
 use App\Guest\Portrait\PortraitStorage;
+use App\Guest\Portrait\PortraitStyle;
+use App\Guest\Portrait\PortraitStyleMode;
 use App\Guest\Repository\GuestRepository;
 use App\Tests\Functional\WebTestCase;
 use App\Tests\Support\FakeGemini;
@@ -81,7 +85,8 @@ final class PortraitTest extends WebTestCase
 
         $this->client->request('GET', "/h/{$wedding->getSlug()}");
         self::assertSelectorExists('.portrait--ready .portrait-art');
-        self::assertSelectorExists('.app-header__avatar--portrait');
+        // Oben rechts bleibt bewusst der Anfangsbuchstabe.
+        self::assertSelectorTextSame('.app-header__avatar', 'S');
 
         $this->client->request('GET', "/h/{$wedding->getSlug()}/portraet/bild");
         self::assertResponseIsSuccessful();
@@ -115,7 +120,7 @@ final class PortraitTest extends WebTestCase
         [$guest, $secret] = $this->fixtures->guest($wedding);
         $this->actAsGuest($guest, $secret);
 
-        $this->submitSelfie($wedding, consent: false);
+        $this->submitSelfie($wedding, overrides: ['consent' => null]);
         self::assertResponseStatusCodeSame(422);
         self::assertSelectorTextContains('.notice--error', 'an Google übertragen');
 
@@ -180,6 +185,147 @@ final class PortraitTest extends WebTestCase
         self::assertNull(self::service(GuestRepository::class)->find($second->getId()));
     }
 
+    public function testGuestPicksAnOfferedStyleAndGetsAColourPortrait(): void
+    {
+        $wedding = $this->weddingWithPortraits();
+        self::fresh($wedding)->offerPortraitStyles([PortraitStyle::Line, PortraitStyle::Watercolor]);
+        self::fresh($wedding)->decidePortraitStylesBy(PortraitStyleMode::Choice);
+        self::em()->flush();
+        [$guest, $secret] = $this->fixtures->guest(self::fresh($wedding));
+        $this->actAsGuest($guest, $secret);
+
+        $this->client->request('GET', "/h/{$wedding->getSlug()}/portraet");
+        self::assertSelectorCount(2, '.style-pick__option');
+        self::assertSelectorTextContains('.style-pick', 'Aquarell');
+
+        // Nicht angebotener Stil wird abgelehnt, bevor etwas an Gemini geht.
+        $this->submitSelfie($wedding, overrides: ['style' => 'pencil']);
+        self::assertResponseStatusCodeSame(422);
+        self::assertSame([], FakeGemini::$requests);
+
+        $this->submitSelfie($wedding, overrides: ['style' => 'watercolor']);
+        self::assertResponseRedirects("/h/{$wedding->getSlug()}");
+        self::assertStringContainsString('watercolor', (string) json_encode(FakeGemini::$requests));
+        $guest = self::fresh($guest);
+        self::assertSame(PortraitStyle::Watercolor, $guest->getPortraitStyle());
+        $size = getimagesize(self::service(PortraitStorage::class)->portraitPath($guest));
+        self::assertSame([768, 768], [$size[0] ?? 0, $size[1] ?? 0]);
+
+        $this->client->request('GET', "/h/{$wedding->getSlug()}");
+        self::assertSelectorExists('img.portrait-art--color');
+        $this->client->request('GET', "/h/{$wedding->getSlug()}/aufgaben");
+        self::assertSelectorTextContains('.challenge-item.is-done', 'Lass dich zeichnen');
+    }
+
+    public function testInRandomModeTheStyleIsASurpriseFromTheOfferedOnes(): void
+    {
+        $wedding = $this->weddingWithPortraits();
+        self::fresh($wedding)->offerPortraitStyles([PortraitStyle::Watercolor, PortraitStyle::Comic]);
+        self::em()->flush();
+        self::assertSame(
+            PortraitStyleMode::Random,
+            self::fresh($wedding)->getPortraitStyleMode(),
+            'Zufall ist der Standard.',
+        );
+        [$guest, $secret] = $this->fixtures->guest(self::fresh($wedding));
+        $this->actAsGuest($guest, $secret);
+
+        $this->client->request('GET', "/h/{$wedding->getSlug()}/portraet");
+        self::assertSelectorNotExists('.style-pick');
+        self::assertSelectorTextContains('form', 'Überraschung');
+
+        // Ein mitgeschickter Wunsch zählt im Zufallsmodus nicht.
+        $this->submitSelfie($wedding, overrides: ['style' => 'pencil']);
+        self::assertResponseRedirects("/h/{$wedding->getSlug()}");
+        self::assertContains(
+            self::fresh($guest)->getPortraitStyle(),
+            [PortraitStyle::Watercolor, PortraitStyle::Comic],
+        );
+    }
+
+    public function testTheAnswerToARandomQuestionPicksTheAccessory(): void
+    {
+        $wedding = $this->weddingWithPortraits();
+        self::assertTrue(self::fresh($wedding)->arePortraitGadgetsEnabled(), 'Accessoires sind Standard.');
+        [$guest, $secret] = $this->fixtures->guest(self::fresh($wedding));
+        $this->actAsGuest($guest, $secret);
+
+        $crawler = $this->client->request('GET', "/h/{$wedding->getSlug()}/portraet");
+        self::assertSelectorTextContains('.portrait-question legend', 'Kurze Frage:');
+        self::assertGreaterThanOrEqual(3, $crawler->filter('.portrait-question input[name="answer"]')->count());
+
+        // Ohne oder mit unbekannter Antwort: abgelehnt, nichts geht an Gemini.
+        $this->submitSelfie($wedding, overrides: ['question' => null, 'answer' => null]);
+        self::assertResponseStatusCodeSame(422);
+        self::assertSelectorTextContains('.notice--error', 'kurze Frage');
+        $this->submitSelfie($wedding, overrides: ['question' => 'origin', 'answer' => 'erfunden']);
+        self::assertResponseStatusCodeSame(422);
+        self::assertSame([], FakeGemini::$requests);
+
+        $this->submitSelfie($wedding, overrides: ['question' => 'origin', 'answer' => 'family']);
+        self::assertResponseRedirects("/h/{$wedding->getSlug()}");
+        $guest = self::fresh($guest);
+        self::assertSame(PortraitGadget::Crown, $guest->getPortraitGadget());
+        self::assertSame('origin:family', $guest->getPortraitAnswer());
+        self::assertStringContainsString(PortraitGadget::Crown->prompt(), (string) json_encode(FakeGemini::$requests));
+
+        $this->client->request('GET', "/h/{$wedding->getSlug()}/portraet");
+        self::assertSelectorTextContains('.portrait-card', 'Überraschung: mit Krone');
+        // Dass die Antwort das Accessoire bestimmt, wird bewusst nicht verraten.
+        self::assertSelectorTextNotContains('.portrait-card', 'Familie');
+        self::assertSelectorTextNotContains('main', 'Antwort');
+
+        // Namen aus dem Hochzeitstitel als Antworten.
+        $this->submitSelfie($wedding, overrides: ['question' => 'closer', 'answer' => 'second']);
+        self::assertSame(PortraitGadget::TopHat, self::fresh($guest)->getPortraitGadget());
+
+        self::fresh($wedding)->enablePortraitGadgets(false);
+        self::em()->flush();
+        FakeGemini::reset();
+        $this->client->request('GET', "/h/{$wedding->getSlug()}/portraet");
+        self::assertSelectorNotExists('.portrait-question');
+        $this->submitSelfie($wedding, overrides: ['question' => null, 'answer' => null]);
+        self::assertNull(self::fresh($guest)->getPortraitGadget());
+        self::assertStringNotContainsString('accessory', (string) json_encode(FakeGemini::$requests));
+    }
+
+    public function testAForgottenAnswerDoesNotUseUpTheDailyLimit(): void
+    {
+        $wedding = $this->weddingWithPortraits();
+        [$guest, $secret] = $this->fixtures->guest(self::fresh($wedding));
+        $this->actAsGuest($guest, $secret);
+
+        for ($i = 0; $i < 5; ++$i) {
+            $this->submitSelfie($wedding, overrides: ['question' => null, 'answer' => null]);
+            self::assertResponseStatusCodeSame(422);
+        }
+
+        $this->submitSelfie($wedding, overrides: ['question' => 'wish', 'answer' => 'party']);
+        self::assertResponseRedirects("/h/{$wedding->getSlug()}");
+        self::assertSame(PortraitGadget::PartyHat, self::fresh($guest)->getPortraitGadget());
+    }
+
+    public function testCoupleChoosesTheOfferedStylesInTheSettings(): void
+    {
+        $wedding = $this->weddingWithPortraits();
+        $user = $this->fixtures->user();
+        $this->fixtures->member($user, self::fresh($wedding), [WeddingPermission::Configure]);
+        $this->client->loginUser(self::fresh($user));
+
+        $crawler = $this->client->request('GET', "/admin/h/{$wedding->getSlug()}/einstellungen");
+        $form = $crawler->selectButton('Module speichern')->form();
+        $values = $form->getPhpValues();
+        $values['portrait_styles'] = ['line', 'watercolor', 'comic', 'erfunden'];
+        $values['portrait_style_mode'] = 'choice';
+        $this->client->request('POST', $form->getUri(), $values);
+        self::assertResponseRedirects();
+        self::assertSame(
+            [PortraitStyle::Line, PortraitStyle::Watercolor, PortraitStyle::Comic],
+            self::fresh($wedding)->portraitStyles(),
+        );
+        self::assertSame(PortraitStyleMode::Choice, self::fresh($wedding)->getPortraitStyleMode());
+    }
+
     private function weddingWithPortraits(): Wedding
     {
         $wedding = $this->fixtures->wedding();
@@ -196,24 +342,42 @@ final class PortraitTest extends WebTestCase
         return (string) $crawler->filter('form[enctype] input[name="_token"]')->attr('value');
     }
 
+    /**
+     * @param array<string, string|null> $overrides Formularfelder ersetzen; null entfernt das Feld
+     */
     private function submitSelfie(
         Wedding $wedding,
-        bool $consent = true,
         ?string $file = null,
         #[SensitiveParameter]
         ?string $token = null,
+        array $overrides = [],
     ): void {
-        $token ??= $this->formToken($wedding);
+        $fields = [
+            '_token' => $token ?? $this->formToken($wedding),
+            'style' => 'line',
+            'consent' => '1',
+            'question' => 'origin',
+            'answer' => 'family',
+        ];
+        foreach ($overrides as $name => $value) {
+            if (null === $value) {
+                unset($fields[$name]);
+            } else {
+                $fields[$name] = $value;
+            }
+        }
+
         $source = $file ?? __DIR__ . '/../../Fixtures/phase0.jpg';
         // Kopie, weil der Upload die Datei verschieben darf.
         $copy = sys_get_temp_dir() . '/selfie-' . bin2hex(random_bytes(4));
         copy($source, $copy);
 
-        $this->client->request(
-            'POST',
-            "/h/{$wedding->getSlug()}/portraet",
-            ['_token' => $token, ...($consent ? ['consent' => '1'] : [])],
-            ['selfie' => new UploadedFile($copy, 'selfie.jpg', null, null, true)],
-        );
+        $this->client->request('POST', "/h/{$wedding->getSlug()}/portraet", $fields, ['selfie' => new UploadedFile(
+            $copy,
+            'selfie.jpg',
+            null,
+            null,
+            true,
+        )]);
     }
 }

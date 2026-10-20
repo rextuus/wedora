@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Media\Controller;
 
+use App\Challenge\DrinkVideoReplacement;
 use App\Challenge\Repository\ChallengeRepository;
 use App\Media\Entity\Media;
 use App\Media\Entity\Upload;
@@ -94,7 +95,7 @@ final class UploadController extends GuestApiController
     }
 
     #[Route('/{id}', name: 'api_upload_append', methods: ['PATCH'])]
-    public function append(Request $request, string $id): Response
+    public function append(Request $request, string $id, DrinkVideoReplacement $drinkVideos): Response
     {
         $upload = $this->ownUpload($request, $id);
         $offset = $request->headers->get('Upload-Offset');
@@ -124,6 +125,9 @@ final class UploadController extends GuestApiController
                 'Cache-Control' => 'private, no-store',
             ]);
         }
+
+        // First/Last Drink: Das neue Video ersetzt das bisherige – erst jetzt, da es vollständig angekommen ist.
+        $drinkVideos->replacePrevious($media);
 
         $data = self::describe($media);
         $data['estimatedSeconds'] = $this->forecast->remainingSeconds($media);

@@ -1,0 +1,51 @@
+{% extends 'guest/app/_layout.html.twig' %}
+{% import 'components/icon.html.twig' as ui %}
+{% import 'components/ornament.html.twig' as deco %}
+
+{% block title %}Wo liegen meine Fotos? – {{ wedding.title }}{% endblock %}
+{% block section %}Privatsphäre{% endblock %}
+
+{% block content %}
+    <header class="section-header section-header--motif">
+        <span class="section-header__motif">{{ deco.motif('key', 92) }}</span>
+        <p class="overline">Privatsphäre</p>
+        <h1 class="headline-lg">Wo liegen meine <em>Fotos?</em></h1>
+    </header>
+
+    {% if wedding.presentation.hostName or wedding.presentation.hostPhotoAt %}
+        <section class="card host-card">
+            {% if wedding.presentation.hostPhotoAt %}<img class="host-card__photo" src="{{ path('wedding_host_photo', {slug: wedding.slug, v: wedding.presentation.hostPhotoAt|date('U')}) }}" alt="{{ wedding.presentation.hostName ?? 'Betreiber' }}" width="96" height="96">{% endif %}
+            <div>
+                <p class="overline">Hier liegt alles</p>
+                <p class="lead">Auf dem eigenen Server von <strong>{{ wedding.presentation.hostName ?? 'einem Gast' }}</strong>{% if wedding.presentation.hostNote %}, {{ wedding.presentation.hostNote }}{% endif %}. {% if wedding.presentation.hostPronoun %}Sprich {{ wedding.presentation.hostPronoun.accusative }} gern an, wenn du Fragen hast.{% else %}Bei Fragen einfach ansprechen.{% endif %}</p>
+            </div>
+        </section>
+    {% endif %}
+
+    {% if wedding.presentation.serverNote or wedding.presentation.serverPhotoAt %}
+        <section class="card server-card">
+            {% if wedding.presentation.serverPhotoAt %}<img class="server-card__photo" src="{{ path('wedding_picture', {slug: wedding.slug, kind: 'server', v: wedding.presentation.serverPhotoAt|date('U')}) }}" alt="Der Server{{ wedding.presentation.serverNote ? ': ' ~ wedding.presentation.serverNote : '' }}" loading="lazy">{% endif %}
+            <div>
+                <p class="overline">Der Server</p>
+                {% if wedding.presentation.serverNote %}
+                    {% set note = (wedding.presentation.serverNote|first|upper) ~ wedding.presentation.serverNote|slice(1) %}
+                    <p class="lead">{{ note }}{{ note|last in ['.', '!', '?'] ? '' : '.' }}</p>
+                {% endif %}
+                <p class="muted">Ein ganz normaler kleiner Rechner – kein Rechenzentrum, keine Cloud.</p>
+            </div>
+        </section>
+    {% endif %}
+
+    <section class="card privacy-facts">
+        <h2 class="headline-sm">Kurz gesagt</h2>
+        <ul>
+            <li><strong>Kein Social Network, keine Cloud:</strong> Fotos und Videos liegen auf einem privaten Server, nicht bei Google, Instagram, Apple oder Meta.</li>
+            <li><strong>Nur für diese Hochzeit:</strong> Sehen kann sie nur, wer über den QR-Code oder eine Einladung dabei ist. Suchmaschinen kommen nicht heran.</li>
+            <li><strong>Du entscheidest:</strong> Beim Hochladen wählst du „Alle Gäste“, „Nur das Brautpaar“ oder „Nur ich“. Deine eigenen Beiträge kannst du jederzeit löschen.</li>
+            <li><strong>Am Ende:</strong> Das Brautpaar bekommt die Fotos als Download. Danach kann die Hochzeit vollständig gelöscht werden – mit allen Dateien.</li>
+            {% if wedding.arePortraitsEnabled() %}<li><strong>Einzige Ausnahme:</strong> Wenn du dich zeichnen lässt, geht dein Selfie kurz an Google (Gemini) und wird danach gelöscht – nur mit deiner ausdrücklichen Zustimmung.</li>{% endif %}
+        </ul>
+    </section>
+
+    <p class="spaced"><a class="text-link" href="{{ path('guest_home', {slug: wedding.slug}) }}">{{ ui.icon('back', 14) }} Zur Startseite</a></p>
+{% endblock %}

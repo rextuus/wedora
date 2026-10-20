@@ -48,7 +48,7 @@ abstract class GuestApiController extends AbstractController
         return self::apiResponse(['error' => $message], $status);
     }
 
-    private static function isSameOrigin(Request $request): bool
+    public static function isSameOrigin(Request $request): bool
     {
         $origin = $request->headers->get('Origin');
         $site = $request->headers->get('Sec-Fetch-Site');

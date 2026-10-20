@@ -1,3 +1,12 @@
-{# Porträt als Maske in der Akzentfarbe. Erwartet: guest, wedding. #}
-<span class="portrait-art" role="img" aria-label="Gezeichnetes Porträt von {{ guest.displayName }}"
-      style="--art: url('{{ path('guest_portrait_image', {slug: wedding.slug, v: guest.portraitUpdatedAt|date('U')}) }}')"></span>
+{# Porträt: Linienzeichnung als Maske in der Akzentfarbe, andere Stile als rund zugeschnittenes Bild.
+   Erwartet: guest (wer schaut), wedding; optional who (wessen Porträt, Standard: das eigene). #}
+{% set who = who ?? guest %}
+{% set stamp = who.portraitUpdatedAt|date('U') %}
+{% set src = who is same as(guest)
+    ? path('guest_portrait_image', {slug: wedding.slug, v: stamp})
+    : path('guest_portrait_of', {slug: wedding.slug, id: who.id, v: stamp}) %}
+{% if who.portraitStyle.isLineArt() %}
+    <span class="portrait-art" role="img" aria-label="Gezeichnetes Porträt von {{ who.displayName }}" style="--art: url('{{ src }}')"></span>
+{% else %}
+    <img class="portrait-art portrait-art--color" src="{{ src }}" alt="Porträt von {{ who.displayName }} im Stil „{{ who.portraitStyle.label }}“" loading="lazy">
+{% endif %}

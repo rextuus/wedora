@@ -10,10 +10,26 @@
 
     <header class="section-header challenge-hero card">
         <span class="challenge-hero__motif">{{ deco.motif(challenge_motif(challenge.title), 140) }}</span>
-        <p class="badge">{{ ui.icon('flag', 14) }} Aufgabe</p>
+        <p class="badge">{{ ui.icon('sparkle', 15) }} Aufgabe</p>
         <h1 class="display">{{ challenge.title }}</h1>
         {% if challenge.description %}<p class="lead">{{ challenge.description }}</p>{% endif %}
     </header>
+
+    {% if mine is not empty %}
+        <section aria-labelledby="mine-title" class="stack">
+            <h2 id="mine-title" class="overline">{{ mine|length == 1 ? 'Dein Beitrag' : 'Deine Beiträge' }}</h2>
+            <div class="grid" data-controller="lightbox gallery-motion" data-lightbox-token-value="{{ csrf_token('guest-action') }}">
+                {% for media in mine %}
+                    {{ include('guest/app/_tile.html.twig', {showStatus: true, likeCounts: {}, liked: {}}) }}
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+
+    {% if challenge_motif(challenge.title) in ['glasses', 'moon'] %}
+        {{ include('guest/app/_drink_explainer.html.twig', {example: challenge_motif(challenge.title) == 'glasses', here: challenge}) }}
+        <p><a class="text-link" href="{{ path('guest_drink_comparison', {slug: wedding.slug}) }}">Vorher – nachher ansehen {{ ui.icon('next', 14) }}</a></p>
+    {% endif %}
 
     <section class="mission card">
         <div class="card__head">
@@ -21,7 +37,8 @@
             {% if done %}<span class="status status--done">{{ ui.icon('check', 14) }} Erledigt</span>{% endif %}
         </div>
         {% if challenge.acceptsAt(now) %}
-            <a class="button button--primary" href="{{ path('guest_upload', {slug: wedding.slug, aufgabe: challenge.id}) }}">{{ ui.icon('camera', 18) }} {{ done ? 'Noch einen Beitrag' : 'Jetzt mitmachen' }}</a>
+            <a class="button button--primary" href="{{ path('guest_upload', {slug: wedding.slug, aufgabe: challenge.id}|merge(challenge_motif(challenge.title) in ['glasses', 'moon'] ? {kamera: 'selfie'} : {})) }}">{{ ui.icon('camera', 18) }} {{ done ? (is_drink(challenge) ? 'Video ersetzen' : 'Noch einen Beitrag') : 'Jetzt mitmachen' }}</a>
+            {% if done and is_drink(challenge) %}<p class="muted">Jeder dreht dieses Video nur einmal. Ein neues ersetzt dein bisheriges.</p>{% endif %}
         {% elseif not challenge.hasStartedAt(now) %}
             <p class="lead">{{ ui.icon('lock', 18) }} Wird ab {{ challenge.startsAt|date('H:i') }} Uhr aktiv.</p>
         {% else %}
@@ -31,7 +48,7 @@
     </section>
 
     {% if contributions is not empty %}
-        <h2 class="overline">Beiträge</h2>
+        <h2 class="overline">{{ mine is not empty ? 'Beiträge der anderen' : 'Beiträge' }}</h2>
         <div class="grid" data-controller="lightbox gallery-motion" data-lightbox-token-value="{{ csrf_token('guest-action') }}">
             {% for media in contributions %}
                 {{ include('guest/app/_tile.html.twig', {likeCounts: {}, liked: {}}) }}

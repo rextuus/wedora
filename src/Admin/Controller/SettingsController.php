@@ -5,14 +5,26 @@ declare(strict_types=1);
 namespace App\Admin\Controller;
 
 use App\Account\WeddingPermission;
+use App\Ai\AiBudget;
 use App\Ai\ImageGenerator;
+use App\Guest\Portrait\PortraitStyle;
+use App\Guest\Portrait\PortraitStyleMode;
+use App\Wedding\CoverMode;
 use App\Wedding\Entity\Wedding;
+use App\Wedding\Host\HostPronoun;
+use App\Wedding\Host\WeddingPicture;
+use App\Wedding\Host\WeddingPictureStorage;
+use App\Wedding\Host\WeddingPictureUpload;
 use App\Wedding\ModerationMode;
 use App\Wedding\ModuleType;
+use App\Wedding\NudgeMode;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use InvalidArgumentException;
+use RuntimeException;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -27,6 +39,7 @@ final class SettingsController extends AdminController
         #[Autowire('%env(int:VIDEO_MAX_DURATION_SECONDS)%')]
         private readonly int $platformMaxVideoSeconds,
         private readonly ImageGenerator $images,
+        private readonly AiBudget $aiBudget,
     ) {}
 
     #[Route('', name: 'admin_settings', methods: ['GET'])]
@@ -40,6 +53,12 @@ final class SettingsController extends AdminController
             'permissions' => $this->permissions($wedding),
             'platformMaxVideoSeconds' => $this->platformMaxVideoSeconds,
             'portraitsAvailable' => $this->images->isAvailable(),
+            'aiUsage' => $this->aiBudget->usage(),
+            'portraitStyles' => PortraitStyle::cases(),
+            'portraitStyleModes' => PortraitStyleMode::cases(),
+            'coverModes' => CoverMode::cases(),
+            'pronouns' => HostPronoun::cases(),
+            'nudgeModes' => NudgeMode::cases(),
         ]);
     }
 
@@ -85,10 +104,144 @@ final class SettingsController extends AdminController
 
         $wedding->enableChallengePoints($request->request->has('points'));
         $wedding->enablePortraits($request->request->has('portraits'));
+        $wedding->enablePortraitGadgets($request->request->has('portrait_gadgets'));
+        $wedding->decidePortraitStylesBy(
+            PortraitStyleMode::tryFrom($request->request->getString(
+                'portrait_style_mode',
+            )) ?? $wedding->getPortraitStyleMode(),
+        );
+        $wedding->offerPortraitStyles(array_values(array_filter(array_map(
+            static fn(mixed $value): ?PortraitStyle => is_string($value) ? PortraitStyle::tryFrom($value) : null,
+            $request->request->all('portrait_styles'),
+        ))));
         $this->em->flush();
         $this->addFlash('success', 'Module gespeichert.');
 
         return $this->redirectToRoute('admin_settings', ['slug' => $slug]);
+    }
+
+    /** Vertrauenshinweis „Wo liegen meine Fotos?“: wer den Server betreibt, was für ein Server, je optional mit Foto. */
+    #[Route('/gastgeber', name: 'admin_settings_host', methods: ['POST'])]
+    public function host(Request $request, string $slug, WeddingPictureUpload $pictures): Response
+    {
+        $wedding = $this->wedding($slug, WeddingPermission::Configure);
+        $this->requireCsrf($request);
+        $presentation = $wedding->getPresentation();
+
+        try {
+            $presentation->describeHost(
+                $request->request->getString('host_name'),
+                $request->request->getString('host_note'),
+                HostPronoun::tryFrom($request->request->getString('host_pronoun')),
+            );
+            $presentation->describeServer($request->request->getString('server_note'));
+            self::applyPicture($request, 'host_photo', $wedding, WeddingPicture::Host, $pictures);
+            self::applyPicture($request, 'server_photo', $wedding, WeddingPicture::Server, $pictures);
+        } catch (InvalidArgumentException|RuntimeException $e) {
+            $this->addFlash('error', $e->getMessage());
+
+            return $this->redirectToRoute('admin_settings', ['slug' => $slug]);
+        }
+
+        $this->em->flush();
+        $this->addFlash('success', 'Hinweis gespeichert.');
+
+        return $this->redirectToRoute('admin_settings', ['slug' => $slug]);
+    }
+
+    /** Bild oben auf der Startseite der Gäste: neuestes Foto, festes Titelbild oder keins. */
+    #[Route('/titelbild', name: 'admin_settings_cover', methods: ['POST'])]
+    public function cover(Request $request, string $slug, WeddingPictureUpload $pictures): Response
+    {
+        $wedding = $this->wedding($slug, WeddingPermission::Configure);
+        $this->requireCsrf($request);
+        $presentation = $wedding->getPresentation();
+
+        try {
+            self::applyPicture($request, 'cover_photo', $wedding, WeddingPicture::Cover, $pictures);
+            $mode = CoverMode::tryFrom($request->request->getString('cover_mode')) ?? CoverMode::Latest;
+            if (CoverMode::Fixed === $mode && null === $presentation->getCoverPhotoAt()) {
+                throw new InvalidArgumentException('Für ein festes Titelbild bitte ein Foto hochladen.');
+            }
+
+            $presentation->chooseCover($mode);
+        } catch (InvalidArgumentException|RuntimeException $e) {
+            $this->addFlash('error', $e->getMessage());
+
+            return $this->redirectToRoute('admin_settings', ['slug' => $slug]);
+        }
+
+        $this->em->flush();
+        $this->addFlash('success', 'Titelbild gespeichert.');
+
+        return $this->redirectToRoute('admin_settings', ['slug' => $slug]);
+    }
+
+    /** Hinweis „Zu viel am Handy?“: nur auf Antippen oder auch von selbst (nach Zeit bzw. vielen Beiträgen). */
+    #[Route('/handy-hinweis', name: 'admin_settings_nudge', methods: ['POST'])]
+    public function nudge(Request $request, string $slug): Response
+    {
+        $wedding = $this->wedding($slug, WeddingPermission::Configure);
+        $this->requireCsrf($request);
+
+        try {
+            $wedding->getPresentation()->configureNudge(
+                NudgeMode::tryFrom($request->request->getString('nudge_mode')) ?? NudgeMode::Time,
+                $request->request->getInt('nudge_threshold'),
+            );
+        } catch (InvalidArgumentException $e) {
+            $this->addFlash('error', $e->getMessage());
+
+            return $this->redirectToRoute('admin_settings', ['slug' => $slug]);
+        }
+
+        $this->em->flush();
+        $this->addFlash('success', 'Handy-Hinweis gespeichert.');
+
+        return $this->redirectToRoute('admin_settings', ['slug' => $slug]);
+    }
+
+    /** Vorschau der hochgeladenen Bilder in der Verwaltung (die Gäste-Adressen gelten nur für Gäste). */
+    #[Route(
+        '/bild/{kind}.jpg',
+        name: 'admin_wedding_picture',
+        requirements: ['kind' => 'server|titelbild'],
+        methods: ['GET'],
+    )]
+    public function preview(string $slug, string $kind, WeddingPictureStorage $storage): Response
+    {
+        $wedding = $this->wedding($slug, WeddingPermission::Configure);
+        $picture = 'server' === $kind ? WeddingPicture::Server : WeddingPicture::Cover;
+        $path = $storage->path($wedding, $picture);
+        if (null === $wedding->getPresentation()->pictureAt($picture) || !is_file($path)) {
+            throw $this->createNotFoundException();
+        }
+
+        $response = new BinaryFileResponse($path, headers: ['Content-Type' => 'image/jpeg']);
+        $response->setPrivate();
+
+        return $response;
+    }
+
+    /**
+     * Neues Bild aus dem Formularfeld übernehmen bzw. auf Wunsch („<feld>_entfernen“) entfernen.
+     *
+     * @throws InvalidArgumentException|RuntimeException
+     */
+    private static function applyPicture(
+        Request $request,
+        string $field,
+        Wedding $wedding,
+        WeddingPicture $picture,
+        WeddingPictureUpload $pictures,
+    ): void {
+        // @mago-expect analysis:mixed-assignment
+        $file = $request->files->get($field);
+        if ($request->request->has($field . '_entfernen')) {
+            $pictures->remove($wedding, $picture);
+        } elseif ($file instanceof UploadedFile) {
+            $pictures->replace($wedding, $picture, $file);
+        }
     }
 
     #[Route('/lebenszyklus', name: 'admin_settings_lifecycle', methods: ['POST'])]

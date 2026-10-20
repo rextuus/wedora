@@ -35,8 +35,93 @@
             {% endfor %}
             <label class="toggle"><input type="checkbox" name="points"{% if wedding.areChallengePointsEnabled() %} checked{% endif %}> Punkte und Rangliste für Aufgaben anzeigen</label>
             <label class="toggle"><input type="checkbox" name="portraits"{% if wedding.arePortraitsEnabled() %} checked{% endif %}> Gezeichnete Porträts: Gäste können aus einem Selfie eine Linienzeichnung erstellen lassen</label>
+            <p class="notice">Kostenbremse (alle Hochzeiten zusammen): heute <strong>{{ aiUsage.today }} von {{ aiUsage.dailyLimit }}</strong>, diesen Monat <strong>{{ aiUsage.month }} von {{ aiUsage.monthlyLimit }}</strong> Zeichnungen. Ist eine Grenze erreicht, geht nichts mehr an Gemini. Die Grenzen stellt die Plattformadministration unter „Alle Hochzeiten“ ein.</p>
+            <label class="toggle"><input type="checkbox" name="portrait_gadgets"{% if wedding.arePortraitGadgetsEnabled() %} checked{% endif %}> Zufälliges Accessoire mitzeichnen (Sonnenbrille, Partyhut, Blumenkranz …)</label>
+            <fieldset class="choice-group">
+                <legend>Wer bestimmt den Stil?</legend>
+                {% for mode in portraitStyleModes %}
+                    <label class="choice"><input type="radio" name="portrait_style_mode" value="{{ mode.value }}"{% if wedding.portraitStyleMode == mode %} checked{% endif %}> {{ mode.label }}</label>
+                {% endfor %}
+            </fieldset>
+            <fieldset class="choice-group">
+                <legend>Angebotene Zeichenstile</legend>
+                {% for style in portraitStyles %}
+                    <label class="choice"><input type="checkbox" name="portrait_styles[]" value="{{ style.value }}"{% if style in wedding.portraitStyles() %} checked{% endif %}> {{ style.label }}</label>
+                {% endfor %}
+            </fieldset>
             <p class="muted">Das Selfie wird dafür mit Einwilligung des Gastes an Google (Gemini) übertragen und danach gelöscht; gespeichert wird nur die Zeichnung, sichtbar nur für den Gast selbst.{% if not portraitsAvailable %} <strong>Derzeit nicht verfügbar: Auf dem Server ist kein Gemini-Schlüssel hinterlegt.</strong>{% endif %}</p>
             <button class="button button--primary" type="submit">Module speichern</button>
+        </form>
+    </section>
+
+    <section class="card" aria-labelledby="cover-title">
+        <h2 id="cover-title" class="headline-sm">Titelbild der Startseite</h2>
+        <p class="muted">Welches Bild Gäste oben auf der Startseite sehen. Ein festes Bild, z. B. von euch beiden, bleibt dauerhaft stehen.</p>
+        <form method="post" action="{{ path('admin_settings_cover', {slug: wedding.slug}) }}" enctype="multipart/form-data" class="stack">
+            {{ include('admin/_csrf.html.twig') }}
+            <fieldset class="choice-group choice-group--stacked">
+                <legend>Bild oben</legend>
+                {% for m in coverModes %}
+                    <label class="choice"><input type="radio" name="cover_mode" value="{{ m.value }}"{% if wedding.presentation.coverMode == m %} checked{% endif %}> {{ m.label }}</label>
+                {% endfor %}
+            </fieldset>
+            <div class="field"><label>Festes Bild{% if wedding.presentation.coverPhotoAt %} ersetzen{% endif %}<input type="file" name="cover_photo" accept="image/jpeg,image/png,image/webp"></label></div>
+            {% if wedding.presentation.coverPhotoAt %}
+                <div class="button-row">
+                    <img src="{{ path('admin_wedding_picture', {slug: wedding.slug, kind: 'titelbild', v: wedding.presentation.coverPhotoAt|date('U')}) }}" alt="Aktuelles Titelbild" height="72" style="border-radius: 8px">
+                    <label class="toggle"><input type="checkbox" name="cover_photo_entfernen"> Bild entfernen</label>
+                </div>
+            {% endif %}
+            <button class="button button--primary" type="submit">Titelbild speichern</button>
+        </form>
+    </section>
+
+    <section class="card" aria-labelledby="nudge-title">
+        <h2 id="nudge-title" class="headline-sm">Hinweis „Zu viel am Handy?“</h2>
+        <p class="muted">Wer lange in der App hängt oder sehr viel hochlädt, sieht unten links eine kleine Figur, die aufs Handy starrt. Wer sie antippt, liest: „Ja, die Seite hier ist mega cool, ich weiß. Aber vergiss nicht, auch die Feier zu genießen …“. Danach verschwindet sie und taucht frühestens nach einer Stunde wieder auf. Die Zeit misst nur das Handy des Gastes; an den Server geht dabei nichts.</p>
+        <form method="post" action="{{ path('admin_settings_nudge', {slug: wedding.slug}) }}" class="stack">
+            {{ include('admin/_csrf.html.twig') }}
+            <fieldset class="choice-group choice-group--stacked">
+                <legend>Figur zeigen</legend>
+                {% for m in nudgeModes %}
+                    <label class="choice"><input type="radio" name="nudge_mode" value="{{ m.value }}"{% if wedding.presentation.nudgeMode == m %} checked{% endif %}> {{ m.label }}</label>
+                {% endfor %}
+            </fieldset>
+            <div class="field"><label>Minuten bzw. Beiträge<input name="nudge_threshold" type="number" min="0" max="600" value="{{ wedding.presentation.nudgeThreshold ?: '' }}" placeholder="20 Minuten bzw. 10 Beiträge"></label></div>
+            <button class="button button--primary" type="submit">Handy-Hinweis speichern</button>
+        </form>
+    </section>
+
+    <section class="card" aria-labelledby="host-title">
+        <h2 id="host-title" class="headline-sm">Wo liegen die Fotos? (Hinweis für Gäste)</h2>
+        <p class="muted">Gäste sehen beim Beitritt, beim Hochladen und auf der Startseite, dass ihre Fotos auf einem privaten Server liegen. Mit Name und Foto der Person, die ihn betreibt, wirkt das gleich vertrauter. Ihr Foto ist für alle mit dem Hochzeitslink sichtbar, das Foto des Servers nur für Gäste.</p>
+        <form method="post" action="{{ path('admin_settings_host', {slug: wedding.slug}) }}" enctype="multipart/form-data" class="stack">
+            {{ include('admin/_csrf.html.twig') }}
+            <div class="form-grid">
+                <div class="field"><label>Name<input name="host_name" maxlength="60" value="{{ wedding.presentation.hostName }}" placeholder="z. B. Wolfgang"></label></div>
+                <div class="field"><label>Ansprache
+                    <select name="host_pronoun">
+                        <option value=""{% if not wedding.presentation.hostPronoun %} selected{% endif %}>neutral („Sprich die Person an“)</option>
+                        {% for p in pronouns %}<option value="{{ p.value }}"{% if wedding.presentation.hostPronoun == p %} selected{% endif %}>{{ p.value }} („Sprich {{ p.accusative }} an“)</option>{% endfor %}
+                    </select></label></div>
+            </div>
+            <div class="field"><label>Kurzer Satz (optional)<input name="host_note" maxlength="160" value="{{ wedding.presentation.hostNote }}" placeholder="z. B. Trauzeuge, sitzt an Tisch 3"></label></div>
+            <div class="field"><label>Foto (optional)<input type="file" name="host_photo" accept="image/jpeg,image/png,image/webp"></label></div>
+            {% if wedding.presentation.hostPhotoAt %}
+                <div class="button-row">
+                    <img src="{{ path('wedding_host_photo', {slug: wedding.slug, v: wedding.presentation.hostPhotoAt|date('U')}) }}" alt="Aktuelles Foto" width="64" height="64" style="border-radius: 50%">
+                    <label class="toggle"><input type="checkbox" name="host_photo_entfernen"> Foto entfernen</label>
+                </div>
+            {% endif %}
+            <div class="field"><label>Der Server (optional)<input name="server_note" maxlength="200" value="{{ wedding.presentation.serverNote }}" placeholder="z. B. ein Lenovo ThinkCentre in seiner Wohnung in Köln-Ehrenfeld"></label></div>
+            <div class="field"><label>Foto des Servers (optional)<input type="file" name="server_photo" accept="image/jpeg,image/png,image/webp"></label></div>
+            {% if wedding.presentation.serverPhotoAt %}
+                <div class="button-row">
+                    <img src="{{ path('admin_wedding_picture', {slug: wedding.slug, kind: 'server', v: wedding.presentation.serverPhotoAt|date('U')}) }}" alt="Aktuelles Foto des Servers" height="64" style="border-radius: 8px">
+                    <label class="toggle"><input type="checkbox" name="server_photo_entfernen"> Foto entfernen</label>
+                </div>
+            {% endif %}
+            <button class="button button--primary" type="submit">Hinweis speichern</button>
         </form>
     </section>
 

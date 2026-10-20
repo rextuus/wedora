@@ -3,6 +3,13 @@
 # Secrets kommen ausschließlich aus .env.prod.local (Vorlage: .env.prod.dist).
 name: wedora
 
+# Docker-Logs begrenzen (sonst wachsen sie unbegrenzt): je Dienst höchstens 5 × 10 MB.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
 x-app: &app
   build:
     context: .
@@ -10,6 +17,7 @@ x-app: &app
     target: prod
   image: wedora-app:prod
   restart: unless-stopped
+  logging: *logging
   volumes:
     - media_data:/srv/media:rw
   environment:
@@ -22,6 +30,8 @@ x-app: &app
     IMGPROXY_KEY: ${IMGPROXY_KEY:?IMGPROXY_KEY fehlt}
     IMGPROXY_SALT: ${IMGPROXY_SALT:?IMGPROXY_SALT fehlt}
     GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    GEMINI_DAILY_LIMIT: ${GEMINI_DAILY_LIMIT:-50}
+    GEMINI_MONTHLY_LIMIT: ${GEMINI_MONTHLY_LIMIT:-300}
   depends_on:
     database:
       condition: service_healthy
@@ -37,7 +47,7 @@ services:
 
   worker:
     <<: *app
-    command: ["php", "bin/console", "messenger:consume", "async", "--time-limit=3600", "--memory-limit=192M"]
+    command: ["php", "bin/console", "messenger:consume", "async", "scheduler_default", "--time-limit=3600", "--memory-limit=192M"]
     deploy:
       resources:
         limits:
@@ -51,6 +61,7 @@ services:
       target: web
     image: wedora-web:prod
     restart: unless-stopped
+    logging: *logging
     environment:
       SERVER_NAME: ${SERVER_NAME:?SERVER_NAME fehlt in .env.prod.local}
     volumes:
@@ -68,6 +79,7 @@ services:
   database:
     image: mysql:8.4.11
     restart: unless-stopped
+    logging: *logging
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE:-app}
       MYSQL_USER: ${MYSQL_USER:-app}
@@ -86,6 +98,7 @@ services:
   imgproxy:
     image: ghcr.io/imgproxy/imgproxy:v4.0.18
     restart: unless-stopped
+    logging: *logging
     # Liest den Medienspeicher mit der Gruppe www-data (GID 82 im Alpine-PHP-Image), nur lesend.
     user: "999:82"
     environment:

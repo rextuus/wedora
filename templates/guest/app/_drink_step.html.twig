@@ -1,0 +1,9 @@
+{% import 'components/ornament.html.twig' as deco %}
+{# Ein Schritt der Erklär-Box; verlinkt auf die Aufgabe, außer man ist gerade auf deren Seite. #}
+{% set linked = target and not (here and target.id.equals(here.id)) %}
+<{{ linked ? 'a' : 'div' }} class="drink-explainer__step{{ late ? ' drink-explainer__step--late' : '' }}"{% if linked %} href="{{ path('guest_challenge', {slug: wedding.slug, id: target.id}) }}"{% endif %}>
+    <span class="drink-explainer__glass">{{ deco.motif(motif, 76) }}</span>
+    <strong>{{ name }}</strong>
+    <span class="muted">{{ when }}<br>{{ hint }}</span>
+    {% if linked %}<span class="drink-explainer__go">Zur Aufgabe ›</span>{% endif %}
+</{{ linked ? 'a' : 'div' }}>

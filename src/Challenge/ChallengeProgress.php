@@ -14,7 +14,8 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Wer welche Aufgabe erledigt hat: ein nicht gelöschter, nicht abgelehnter Beitrag zur Aufgabe.
+ * Wer welche Aufgabe erledigt hat: ein nicht gelöschter, nicht abgelehnter Beitrag zur Aufgabe –
+ * bei der Umfrage „Wer von beiden?“ eine Antwort auf jede Frage der Hochzeit.
  */
 final readonly class ChallengeProgress
 {
@@ -34,10 +35,15 @@ final readonly class ChallengeProgress
         }
 
         $ids = $this->em->getConnection()->fetchFirstColumn(
-            'SELECT DISTINCT challenge_id FROM media WHERE uploader_guest_id = ? AND challenge_id IN (?)'
-            . ' AND deleted_at IS NULL AND publication_status <> ?',
-            [$guest->getId()->toBinary(), self::binaryIds($challenges), PublicationStatus::Rejected->value],
-            [ParameterType::BINARY, ArrayParameterType::BINARY],
+            'SELECT challenge_id FROM '
+            . self::done('m.challenge_id IN (:challenges)', 'c.id IN (:challenges)')
+            . ' WHERE guest_id = :guest',
+            [
+                'challenges' => self::binaryIds($challenges),
+                'guest' => $guest->getId()->toBinary(),
+                'rejected' => PublicationStatus::Rejected->value,
+            ],
+            ['challenges' => ArrayParameterType::BINARY, 'guest' => ParameterType::BINARY],
         );
 
         $done = [];
@@ -60,10 +66,11 @@ final readonly class ChallengeProgress
         }
 
         $rows = $this->em->getConnection()->fetchAllAssociative(
-            'SELECT challenge_id, COUNT(DISTINCT uploader_guest_id) AS n FROM media WHERE challenge_id IN (?)'
-            . ' AND deleted_at IS NULL AND publication_status <> ? GROUP BY challenge_id',
-            [self::binaryIds($challenges), PublicationStatus::Rejected->value],
-            [ArrayParameterType::BINARY],
+            'SELECT challenge_id, COUNT(*) AS n FROM '
+            . self::done('m.challenge_id IN (:challenges)', 'c.id IN (:challenges)')
+            . ' GROUP BY challenge_id',
+            ['challenges' => self::binaryIds($challenges), 'rejected' => PublicationStatus::Rejected->value],
+            ['challenges' => ArrayParameterType::BINARY],
         );
 
         $counts = [];
@@ -84,13 +91,13 @@ final readonly class ChallengeProgress
     public function leaderboard(Wedding $wedding, int $limit = 10): array
     {
         $rows = $this->em->getConnection()->fetchAllAssociative(
-            'SELECT g.id AS guest_id, g.display_name AS name, SUM(c.points) AS points FROM ('
-                . ' SELECT DISTINCT m.uploader_guest_id, m.challenge_id FROM media m'
-                . ' WHERE m.wedding_id = ? AND m.challenge_id IS NOT NULL AND m.deleted_at IS NULL AND m.publication_status <> ?'
-                . ') done JOIN challenge c ON c.id = done.challenge_id JOIN guest g ON g.id = done.uploader_guest_id'
+            'SELECT g.id AS guest_id, g.display_name AS name, SUM(c.points) AS points FROM '
+                . self::done('m.wedding_id = :wedding', 'c.wedding_id = :wedding')
+                . ' JOIN challenge c ON c.id = done.challenge_id JOIN guest g ON g.id = done.guest_id'
                 . ' WHERE c.points > 0 AND g.blocked_at IS NULL GROUP BY g.id, g.display_name ORDER BY points DESC, name ASC LIMIT '
                 . max(1, $limit),
-            [$wedding->getId()->toBinary(), PublicationStatus::Rejected->value],
+            ['wedding' => $wedding->getId()->toBinary(), 'rejected' => PublicationStatus::Rejected->value],
+            ['wedding' => ParameterType::BINARY],
         );
 
         $board = [];
@@ -105,6 +112,27 @@ final readonly class ChallengeProgress
         }
 
         return $board;
+    }
+
+    /**
+     * Abgeleitete Tabelle „done“ (guest_id, challenge_id), je Gast und Aufgabe höchstens eine Zeile:
+     * Beiträge zu Foto-/Video-Aufgaben und vollständig beantwortete Umfragen. Erwartet den Parameter :rejected.
+     */
+    private static function done(string $mediaFilter, string $pollFilter): string
+    {
+        return (
+            '(SELECT m.uploader_guest_id AS guest_id, m.challenge_id FROM media m'
+            . ' WHERE '
+            . $mediaFilter
+            . ' AND m.uploader_guest_id IS NOT NULL AND m.challenge_id IS NOT NULL'
+            . ' AND m.deleted_at IS NULL AND m.publication_status <> :rejected'
+            . ' UNION SELECT v.guest_id, c.id FROM challenge c'
+            . ' JOIN (SELECT wedding_id, COUNT(*) AS total FROM poll_question GROUP BY wedding_id) t ON t.wedding_id = c.wedding_id'
+            . ' JOIN poll_question q ON q.wedding_id = c.wedding_id JOIN poll_vote v ON v.question_id = q.id'
+            . " WHERE c.media_type = 'poll' AND "
+            . $pollFilter
+            . ' GROUP BY v.guest_id, c.id, t.total HAVING COUNT(*) = t.total) done'
+        );
     }
 
     /**

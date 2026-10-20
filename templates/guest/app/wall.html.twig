@@ -1,0 +1,69 @@
+{% extends 'guest/app/_layout.html.twig' %}
+{% import 'components/icon.html.twig' as ui %}
+{% import 'components/ornament.html.twig' as deco %}
+
+{% block title %}Wer ist alles da? – {{ wedding.title }}{% endblock %}
+{% block section %}Gäste{% endblock %}
+
+{% macro share_form(shared, label, style, back) %}
+    <form method="post" action="{{ path('guest_portrait_share', {slug: app.request.attributes.get('slug')}) }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('guest-action') }}">
+        <input type="hidden" name="shared" value="{{ shared ? 1 : 0 }}">
+        <input type="hidden" name="zurueck" value="{{ back }}">
+        <button class="button {{ style }}" type="submit">{{ label }}</button>
+    </form>
+{% endmacro %}
+
+{% block content %}
+    <a class="text-link back-link" href="{{ path('guest_home', {slug: wedding.slug}) }}">{{ ui.icon('back', 14) }} Startseite</a>
+
+    <header class="section-header section-header--motif">
+        <span class="section-header__motif">{{ deco.motif('hands', 92) }}</span>
+        <p class="overline">Gästewand</p>
+        <h1 class="headline-lg">Wer ist alles <em>da?</em></h1>
+        <p class="lead">Gezeichnete Porträts der Gäste, die ihres zeigen möchten – damit du weißt, wer wer ist.</p>
+        {{ deco.sprig(110) }}
+    </header>
+
+    {% if unlocked %}
+        <div data-controller="portrait-zoom">
+            <ul class="wall">
+                {% for who in [guest]|merge(others) %}
+                    {% set me = who is same as(guest) %}
+                    <li class="wall__item{{ me ? ' wall__item--me' : '' }}">
+                        <button type="button" class="wall__open" data-action="portrait-zoom#open" data-portrait-zoom-name-param="{{ who.displayName }}" aria-haspopup="dialog" aria-label="Porträt von {{ who.displayName }} groß anzeigen">
+                            <span class="wall__art" data-art>{{ include('guest/app/_portrait_art.html.twig', {who: who}) }}</span>
+                            <span class="wall__name">{{ who.displayName }}{% if me %} <span class="muted">(du)</span>{% endif %}</span>
+                        </button>
+                    </li>
+                {% endfor %}
+            </ul>
+            <dialog class="portrait-zoom card" data-portrait-zoom-target="dialog" data-action="click->portrait-zoom#backdrop" aria-labelledby="portrait-zoom-name">
+                <span class="portrait-zoom__art" data-portrait-zoom-target="art"></span>
+                <p class="portrait-zoom__name" id="portrait-zoom-name" data-portrait-zoom-target="name"></p>
+                <button type="button" class="portrait-zoom__close" data-action="portrait-zoom#close" aria-label="Schließen">{{ ui.icon('close', 20) }}</button>
+            </dialog>
+        </div>
+        {% if others is empty %}
+            <p class="muted">Du bist der oder die Erste auf der Wand – die anderen folgen bestimmt.</p>
+        {% endif %}
+        <div class="card stack wall__privacy">
+            <p class="muted">Dein Porträt sehen alle Gäste, die ihres ebenfalls zeigen – auch klein neben deinen Fotos und Gästebuch-Einträgen. Das Brautpaar und die Verwaltung sehen es nicht.</p>
+            {{ _self.share_form(false, 'Mein Porträt nicht mehr zeigen', 'button--secondary', 'wand') }}
+        </div>
+    {% else %}
+        <section class="empty-state card wall__locked">
+            {{ deco.duo(72) }}
+            <p class="lead">
+                {% if count %}{{ count }} {{ count == 1 ? 'Gast zeigt' : 'Gäste zeigen' }} schon {{ count == 1 ? 'sein' : 'ihr' }} Porträt.{% else %}Noch zeigt niemand sein Porträt.{% endif %}
+                Die Wand siehst du, sobald du deins auch zeigst.
+            </p>
+            {% if guest.hasPortrait() %}
+                {{ _self.share_form(true, 'Mein Porträt zeigen', 'button--primary', 'wand') }}
+                <p class="muted">Es erscheint dann auf der Wand und klein neben deinen Fotos und Gästebuch-Einträgen – nur für Gäste, die ihres auch zeigen. Du kannst es jederzeit wieder ausblenden.</p>
+            {% elseif portraitOffered %}
+                <a class="button button--primary" href="{{ path('guest_portrait', {slug: wedding.slug}) }}">{{ ui.icon('camera', 18) }} Erst zeichnen lassen</a>
+            {% endif %}
+        </section>
+    {% endif %}
+{% endblock %}

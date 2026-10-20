@@ -1,4 +1,5 @@
 import { Controller } from '@hotwired/stimulus';
+import { visit } from '@hotwired/turbo';
 
 /*
  * Vollbild-Ansicht für Fotos und Videos mit Wischen (Scroll-Snap), Pfeiltasten und Esc.
@@ -12,10 +13,24 @@ export default class extends Controller {
     connect() {
         this.onKey = this.onKey.bind(this);
         this.onPop = this.onPop.bind(this);
+        this.onBeforeCache = this.onBeforeCache.bind(this);
+        document.addEventListener('turbo:before-cache', this.onBeforeCache);
     }
 
     disconnect() {
+        document.removeEventListener('turbo:before-cache', this.onBeforeCache);
         this.close(false);
+    }
+
+    /*
+     * Turbo speichert beim Zurück eine Momentaufnahme der Seite und rendert sie wieder. Eine gerade
+     * ausblendende Vollbild-Ansicht darf darin nicht landen – sonst bleibt eine tote Kopie stehen,
+     * deren Schließen-Knopf nichts mehr tut.
+     */
+    onBeforeCache() {
+        this.close(false);
+        document.querySelectorAll('body > .lightbox').forEach((element) => element.remove());
+        document.body.classList.remove('has-lightbox');
     }
 
     open(event) {
@@ -45,7 +60,7 @@ export default class extends Controller {
                 <button type="button" class="lightbox__close" aria-label="Schließen">${icon('close')}</button>
             </div>
             <button type="button" class="lightbox__nav lightbox__nav--prev" aria-label="Vorheriges">${icon('prev')}</button>
-            <div class="lightbox__track"></div>
+            <div class="lightbox__track" tabindex="0" aria-label="Fotos und Videos – wischen oder Pfeiltasten zum Blättern"></div>
             <button type="button" class="lightbox__nav lightbox__nav--next" aria-label="Nächstes">${icon('next')}</button>
             <div class="lightbox__meta">
                 <div class="lightbox__text"><p class="lightbox__who"></p><p class="lightbox__when"></p><p class="lightbox__caption"></p></div>
@@ -67,6 +82,12 @@ export default class extends Controller {
         root.querySelector('.lightbox__nav--prev').addEventListener('click', () => this.go(this.index - 1));
         root.querySelector('.lightbox__nav--next').addEventListener('click', () => this.go(this.index + 1));
         root.querySelector('.lightbox__like').addEventListener('click', () => this.like());
+        // Zur Detailseite erst nach dem Schließen, damit der Verlaufseintrag dieser Ansicht nicht übrig bleibt.
+        root.querySelector('.lightbox__details').addEventListener('click', (event) => {
+            event.preventDefault();
+            this.pendingVisit = event.currentTarget.href;
+            history.back();
+        });
         this.track.addEventListener('scroll', () => {
             clearTimeout(this.scrollTimer);
             this.scrollTimer = setTimeout(() => this.settle(), 60);
@@ -221,7 +242,12 @@ export default class extends Controller {
     }
 
     onPop() {
-        this.close(true);
+        const target = this.pendingVisit;
+        this.pendingVisit = null;
+        this.close(!target);
+        if (target) {
+            visit(target);
+        }
     }
 
     close(restoreFocus) {

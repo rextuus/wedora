@@ -24,6 +24,7 @@
             {route: 'admin_export', label: 'Export', key: 'export', show: is_granted('WEDDING_EXPORT', wedding)},
             {route: 'admin_team', label: 'Team', key: 'team', show: is_granted('ROLE_PLATFORM_ADMIN')},
         ]) %}
+        <section class="admin-context" aria-label="Hochzeit">
         <div class="admin-wedding">
             <p class="overline"><a href="{{ path('app_admin') }}">Alle Hochzeiten</a></p>
             <h1 class="headline-lg">{{ wedding.title }}{% if not wedding.active %} <span class="status">Archiviert</span>{% endif %}</h1>
@@ -33,6 +34,7 @@
                 <a class="chip chip--filter" href="{{ path(tab.route, {slug: wedding.slug}) }}"{% if active == tab.key %} aria-current="page"{% endif %}>{{ tab.label }}</a>
             {% endfor %}
         </nav>
+        </section>
     {% endif %}
 
     <main class="admin-main" id="main">

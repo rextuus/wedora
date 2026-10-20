@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Guest\Entity;
 
 use App\Guest\JoinMethod;
+use App\Guest\Portrait\PortraitGadget;
 use App\Guest\Portrait\PortraitStatus;
+use App\Guest\Portrait\PortraitStyle;
 use App\Guest\Repository\GuestRepository;
 use App\Wedding\Entity\Invitation;
 use App\Wedding\Entity\Wedding;
@@ -48,6 +50,20 @@ class Guest
 
     #[ORM\Column(nullable: true)]
     private ?DateTimeImmutable $portraitUpdatedAt = null;
+
+    #[ORM\Column(length: 16, nullable: true, enumType: PortraitStyle::class)]
+    private ?PortraitStyle $portraitStyle = null;
+
+    #[ORM\Column(length: 16, nullable: true, enumType: PortraitGadget::class)]
+    private ?PortraitGadget $portraitGadget = null;
+
+    /** Antwort auf die Frage beim Selfie als „frage:antwort“ (bestimmt das Accessoire). */
+    #[ORM\Column(length: 40, nullable: true)]
+    private ?string $portraitAnswer = null;
+
+    /** Porträt für andere Gäste freigegeben (Gästewand, kleines Bild am Namen); nur auf eigenen Wunsch. */
+    #[ORM\Column]
+    private bool $portraitShared = false;
 
     private function __construct(
         #[ORM\ManyToOne]
@@ -180,10 +196,32 @@ class Guest
         return $this->portraitUpdatedAt;
     }
 
-    public function portraitRequested(DateTimeImmutable $at): void
+    public function getPortraitStyle(): PortraitStyle
     {
+        return $this->portraitStyle ?? PortraitStyle::Line;
+    }
+
+    public function getPortraitGadget(): ?PortraitGadget
+    {
+        return $this->portraitGadget;
+    }
+
+    public function portraitRequested(
+        DateTimeImmutable $at,
+        PortraitStyle $style = PortraitStyle::Line,
+        ?PortraitGadget $gadget = null,
+        ?string $answer = null,
+    ): void {
         $this->portraitStatus = PortraitStatus::Pending;
         $this->portraitUpdatedAt = $at;
+        $this->portraitStyle = $style;
+        $this->portraitGadget = $gadget;
+        $this->portraitAnswer = $answer;
+    }
+
+    public function getPortraitAnswer(): ?string
+    {
+        return $this->portraitAnswer;
     }
 
     public function portraitDrawn(DateTimeImmutable $at): void
@@ -198,9 +236,24 @@ class Guest
         $this->portraitUpdatedAt = $at;
     }
 
+    public function isPortraitShared(): bool
+    {
+        return $this->portraitShared;
+    }
+
+    public function sharePortrait(bool $shared): void
+    {
+        $this->portraitShared = $shared;
+    }
+
+    /** Mit dem Porträt endet auch die Freigabe; ein neues ist erst einmal wieder privat. */
     public function portraitRemoved(): void
     {
+        $this->portraitShared = false;
         $this->portraitStatus = null;
         $this->portraitUpdatedAt = null;
+        $this->portraitStyle = null;
+        $this->portraitGadget = null;
+        $this->portraitAnswer = null;
     }
 }

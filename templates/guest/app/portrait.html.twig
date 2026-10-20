@@ -6,10 +6,11 @@
 {% block section %}Porträt{% endblock %}
 
 {% block content %}
-    <header class="section-header portrait-header">
+    <header class="section-header section-header--motif portrait-header">
+        <span class="section-header__motif">{{ deco.motif('pencil', 92) }}</span>
         <p class="overline">{{ welcome ? 'Willkommen, ' ~ guest.displayName : 'Dein Porträt' }}</p>
         <h1 class="headline-lg">Lass dich <em>zeichnen</em></h1>
-        <p class="lead">Mach ein Selfie – daraus entsteht eine feine Linienzeichnung im Stil dieser Hochzeit. Sie erscheint nur bei dir oben auf der Startseite.</p>
+        <p class="lead">Mach ein Selfie – daraus entsteht {{ wedding.letsGuestsChoosePortraitStyle() ? 'ein gezeichnetes Porträt im Stil deiner Wahl' : (wedding.portraitStyles()|length > 1 ? 'ein gezeichnetes Porträt' : 'eine feine Linienzeichnung im Stil dieser Hochzeit') }}. Erst einmal siehst nur du es – auf der Gästewand zeigen kannst du es, wenn du magst.</p>
         {{ deco.sprig(110) }}
     </header>
 
@@ -18,6 +19,20 @@
     {% if guest.hasPortrait() %}
         <section class="card portrait-card" aria-label="Dein aktuelles Porträt">
             <span class="portrait__wreath portrait__wreath--large">{{ deco.garland(250) }}{{ include('guest/app/_portrait_art.html.twig') }}</span>
+            {% if guest.portraitGadget %}
+                <p class="badge">Überraschung: {{ guest.portraitGadget.label }}</p>
+            {% endif %}
+            <form class="portrait-share" method="post" action="{{ path('guest_portrait_share', {slug: wedding.slug}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('guest-action') }}">
+                <input type="hidden" name="shared" value="{{ guest.portraitShared ? 0 : 1 }}">
+                {% if guest.portraitShared %}
+                    <p class="muted">{{ ui.icon('check', 16) }} Auf der <a href="{{ path('guest_wall', {slug: wedding.slug}) }}">Gästewand</a> – sichtbar für Gäste, die ihr Porträt auch zeigen.</p>
+                    <button class="link-button" type="submit">Nicht mehr zeigen</button>
+                {% else %}
+                    <p class="muted">Zeig dein Porträt auf der Gästewand „Wer ist alles da?“ und sieh die der anderen. Es erscheint dann auch klein neben deinen Fotos und Gästebuch-Einträgen – nur für Gäste, die ihres auch zeigen, nicht für das Brautpaar.</p>
+                    <button class="button button--primary" type="submit">Auf der Gästewand zeigen</button>
+                {% endif %}
+            </form>
             <div class="button-row">
                 <a class="button button--secondary" href="{{ path('guest_portrait_image', {slug: wedding.slug, v: guest.portraitUpdatedAt|date('U'), download: 1}) }}" download>{{ ui.icon('download', 18) }} Herunterladen</a>
                 <form method="post" action="{{ path('guest_portrait_delete', {slug: wedding.slug}) }}" data-turbo-confirm="Porträt löschen?">
@@ -28,7 +43,9 @@
         </section>
     {% endif %}
 
-    {% if guest.portraitStatus and guest.portraitStatus.value == 'pending' %}
+    {% if exhausted|default(false) %}
+        <p class="notice" role="status">Das Zeichnen ist für heute leider ausgeschöpft. Schau morgen wieder vorbei!</p>
+    {% elseif guest.portraitStatus and guest.portraitStatus.value == 'pending' %}
         <p class="notice" role="status">Dein Porträt wird gerade gezeichnet. Das dauert meist unter einer Minute.</p>
     {% else %}
         <form class="card stack" method="post" action="{{ path('guest_portrait_create', {slug: wedding.slug}) }}" enctype="multipart/form-data"
@@ -42,6 +59,32 @@
                 <img class="selfie-pick__preview" alt="" hidden data-selfie-target="preview">
                 <span class="selfie-pick__empty" data-selfie-target="placeholder">{{ ui.icon('camera', 28) }} Selfie aufnehmen</span>
             </label>
+
+            {% set styles = wedding.portraitStyles() %}
+            {% if wedding.letsGuestsChoosePortraitStyle() %}
+                <fieldset class="style-pick">
+                    <legend>Welcher Stil?</legend>
+                    {% for style in styles %}
+                        <label class="style-pick__option">
+                            <input class="visually-hidden" type="radio" name="style" value="{{ style.value }}"{% if loop.first %} checked{% endif %}>
+                            <img src="{{ asset('images/portrait-styles/' ~ style.value ~ '.jpg') }}" alt="" width="120" height="120" loading="lazy">
+                            <span>{{ style.label }}</span>
+                        </label>
+                    {% endfor %}
+                </fieldset>
+            {% elseif styles|length > 1 %}
+                <p class="muted">Welcher Stil es wird, ist eine Überraschung.</p>
+            {% endif %}
+
+            {% if question %}
+                <fieldset class="choice-group portrait-question">
+                    <legend>Kurze Frage: {{ question.question }}</legend>
+                    <input type="hidden" name="question" value="{{ question.key }}">
+                    {% for key, answer in question.answers %}
+                        <label class="choice"><input type="radio" name="answer" value="{{ key }}" required> {{ answer.label }}</label>
+                    {% endfor %}
+                </fieldset>
+            {% endif %}
 
             <label class="consent">
                 <input type="checkbox" name="consent" value="1" required>

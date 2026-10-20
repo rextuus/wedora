@@ -1,0 +1,18 @@
+{#
+  Vertrauenshinweis: Wo liegen die Fotos? Erwartet: wedding; optional: link (Link zur Infoseite zeigen).
+#}
+<div class="privacy-note" role="note">
+    {% if wedding.presentation.hostPhotoAt %}
+        <img class="privacy-note__photo" src="{{ path('wedding_host_photo', {slug: wedding.slug, v: wedding.presentation.hostPhotoAt|date('U')}) }}" alt="{{ wedding.presentation.hostName ?? 'Betreiber' }}" width="48" height="48" loading="lazy">
+    {% else %}
+        <span class="privacy-note__photo privacy-note__photo--icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v6c0 4 3 7.5 7 9 4-1.5 7-5 7-9V6z"/><path d="m9 12 2 2 4-4"/></svg></span>
+    {% endif %}
+    <p>
+        {% if wedding.presentation.hostName %}
+            Deine Fotos liegen auf dem eigenen Server von <strong>{{ wedding.presentation.hostName }}</strong>{% if wedding.presentation.hostNote %}, {{ wedding.presentation.hostNote }}{% endif %} – nicht bei Google, Instagram &amp; Co.
+        {% else %}
+            Deine Fotos liegen auf einem privaten Server – nicht bei Google, Instagram &amp; Co.
+        {% endif %}
+        {% if link|default(false) %}<a href="{{ path('guest_privacy', {slug: wedding.slug}) }}">Mehr dazu</a>{% endif %}
+    </p>
+</div>

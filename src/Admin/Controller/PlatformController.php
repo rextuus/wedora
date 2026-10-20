@@ -9,6 +9,7 @@ use App\Account\Entity\WeddingMember;
 use App\Account\Repository\UserRepository;
 use App\Account\Repository\WeddingMemberRepository;
 use App\Account\WeddingPermission;
+use App\Ai\AiBudget;
 use App\Wedding\Entity\Wedding;
 use App\Wedding\Repository\WeddingRepository;
 use App\Wedding\WeddingEraser;
@@ -32,6 +33,22 @@ final class PlatformController extends AdminController
     public function __construct(
         private readonly EntityManagerInterface $em,
     ) {}
+
+    /** Kostenbremse für KI-Bilder (gilt für alle Hochzeiten zusammen). */
+    #[Route('/admin/ki-grenzen', name: 'admin_ai_limits', methods: ['POST'])]
+    public function aiLimits(Request $request, AiBudget $budget): Response
+    {
+        $this->requireCsrf($request);
+
+        try {
+            $budget->configure($request->request->getInt('daily_limit'), $request->request->getInt('monthly_limit'));
+            $this->addFlash('success', 'Grenzen gespeichert – sie gelten sofort.');
+        } catch (InvalidArgumentException $e) {
+            $this->addFlash('error', $e->getMessage());
+        }
+
+        return $this->redirectToRoute('app_admin');
+    }
 
     #[Route('/admin/neu', name: 'admin_wedding_create', methods: ['GET', 'POST'])]
     public function create(Request $request, WeddingRepository $weddings): Response

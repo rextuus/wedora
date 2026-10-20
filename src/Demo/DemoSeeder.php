@@ -60,7 +60,12 @@ final readonly class DemoSeeder
     public function importDirectory(Wedding $wedding, string $directory, bool $withLikes, callable $report): array
     {
         $guests = $this->guests($wedding);
-        $files = new Finder()->files()->in($directory)->depth(0)->name('/\.(jpe?g|png|webp|mp4|mov)$/i')->sortByName();
+        $files = new Finder()
+            ->files()
+            ->in($directory)
+            ->depth(0)
+            ->name('/\.(jpe?g|png|webp|mp4|mov)$/i')
+            ->sortByName();
         $imported = [];
         foreach (iterator_to_array($files, false) as $i => $file) {
             $guest = $guests[$i % count($guests)];
