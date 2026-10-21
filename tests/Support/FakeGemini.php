@@ -8,7 +8,8 @@ use Symfony\Component\HttpClient\Response\MockResponse;
 
 /**
  * Ersetzt in Tests alle ausgehenden HTTP-Anfragen (framework.http_client.mock_response_factory)
- * und antwortet wie die Gemini API. Kein Test spricht je mit Google.
+ * und antwortet wie die Gemini API. Kein Test spricht je mit Google. Anfragen an das interne imgproxy
+ * (Varianten, Angleichen) bekommen ein festes Foto – die echte Kette prüft ProtectedMediaDeliveryTest.
  */
 final class FakeGemini
 {
@@ -32,6 +33,10 @@ final class FakeGemini
      */
     public function __invoke(string $method, string $url, array $options = []): MockResponse
     {
+        if (str_starts_with($url, 'http://imgproxy')) {
+            return new MockResponse((string) file_get_contents(__DIR__ . '/../Fixtures/phase0.jpg'));
+        }
+
         self::$requests[] = ['method' => $method, 'url' => $url, 'options' => $options];
 
         return match (self::$answer) {

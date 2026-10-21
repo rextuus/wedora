@@ -20,4 +20,9 @@ enum MediaFile: string
 
     /** Angeglichene Fassung eines Fotos („Fotos automatisch angleichen“); Quelle für die Anzeige statt des Originals. */
     case Enhanced = 'enhanced.jpg';
+
+    /** Vorberechnete Anzeige-Varianten (siehe ImagePreset); Caddy liefert sie direkt, sonst rechnet imgproxy. */
+    case Thumb = 'thumb.webp';
+    case Display = 'display.webp';
+    case Tiny = 'tiny.webp';
 }

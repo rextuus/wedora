@@ -8,12 +8,16 @@
 {% block content %}
     <header class="section-header section-header--motif">
         <span class="section-header__motif">{{ deco.motif('confetti', 92) }}</span>
-        <p class="overline">{{ completed|length }} von {{ challenges|length }} erledigt</p>
+        <p class="overline">{% if wheel %}{{ completed|length }} erledigt{% else %}{{ completed|length }} von {{ challenges|length }} erledigt{% endif %}</p>
         <h1 class="headline-lg">Foto-<em>Aufgaben</em></h1>
         {{ deco.sprig(110) }}
     </header>
 
-    {% if challenges is empty and not portraitOffered %}
+    {% if wheel %}
+        {{ include('guest/app/_wheel.html.twig') }}
+    {% endif %}
+
+    {% if challenges is empty and not portraitOffered and not wheel %}
         <div class="empty-state card">{{ deco.motif('camera', 72) }}<p class="lead">Das Brautpaar hat noch keine Aufgaben angelegt.</p></div>
     {% endif %}
 
@@ -27,7 +31,7 @@
                     <h2><a href="{{ path('guest_portrait', {slug: wedding.slug}) }}">Lass dich zeichnen</a></h2>
                     {% if drawn %}<span class="status status--done">{{ ui.icon('check', 14) }} Erledigt</span>{% else %}<span class="status status--pending">Offen</span>{% endif %}
                 </div>
-                <p>Ein Selfie, daraus wird eine Zeichnung{{ wedding.letsGuestsChoosePortraitStyle() ? ' – Stil frei wählbar.' : (wedding.portraitStyles()|length > 1 ? ' – der Stil ist eine Überraschung.' : '.') }}</p>
+                <p>Ein Selfie oder Foto von dir, daraus wird eine Zeichnung{{ wedding.letsGuestsChoosePortraitStyle() ? ' – Stil frei wählbar.' : (wedding.portraitStyles()|length > 1 ? ' – der Stil ist eine Überraschung.' : '.') }}</p>
                 <p class="muted">Foto{% if drawn %} · Porträt fertig{% endif %}</p>
                 <a class="button {{ drawn ? 'button--secondary' : 'button--primary' }}" href="{{ path('guest_portrait', {slug: wedding.slug}) }}">{{ drawn ? 'Neues Porträt' : 'Mitmachen' }}</a>
             </li>

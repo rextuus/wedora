@@ -10,12 +10,13 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 /**
  * Sonderregeln fürs Hochladen zu einer Aufgabe: Zur Umfrage lädt man nichts hoch (eigene Seite),
- * zu „Foto mit gezeichnetem Gast“ nur mit zugelostem Partner.
+ * zu „Foto mit gezeichnetem Gast“ nur mit zugelostem Partner, mit Glücksrad nur zu gezogenen Aufgaben.
  */
 final readonly class ChallengeUploadRules
 {
     public function __construct(
         private PortraitBuddy $buddies,
+        private ChallengeWheel $wheel,
         private UrlGeneratorInterface $urls,
     ) {}
 
@@ -25,6 +26,7 @@ final readonly class ChallengeUploadRules
         $slug = $guest->getWedding()->getSlug();
 
         return match (true) {
+            !$this->wheel->allows($guest, $challenge) => $this->urls->generate('guest_challenges', ['slug' => $slug]),
             $challenge->getMediaType()->isPoll() => $this->urls->generate('guest_poll', ['slug' => $slug]),
             null !== $this->rejection($guest, $challenge) => $this->urls->generate('guest_challenge', [
                 'slug' => $slug,
@@ -37,6 +39,10 @@ final readonly class ChallengeUploadRules
     /** Grund, warum der Upload nicht starten darf; null = erlaubt (übrige Prüfungen macht UploadService). */
     public function rejection(Guest $guest, Challenge $challenge): ?string
     {
+        if (!$this->wheel->allows($guest, $challenge)) {
+            return 'Diese Aufgabe musst du zuerst am Glücksrad ziehen.';
+        }
+
         if ($challenge->getMediaType()->isBuddy() && null === $this->buddies->current($guest, $challenge)) {
             return 'Lass dir zuerst bei der Aufgabe einen Partner zulosen.';
         }

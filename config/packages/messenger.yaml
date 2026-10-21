@@ -32,6 +32,7 @@ framework:
             App\Guest\Portrait\CreatePortrait: async
             App\Media\Processing\EnhancePhoto: async
             App\Media\Processing\EnhanceWeddingPhotos: async
+            App\Media\Processing\GenerateImageVariants: async
 
 when@test:
     framework:

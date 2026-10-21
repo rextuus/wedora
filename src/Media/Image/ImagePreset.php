@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Media\Image;
 
+use App\Media\Storage\MediaFile;
+
 /**
  * Feste Bildvarianten. Nur diese Transformationen sind von außen anforderbar,
  * damit niemand beliebig große oder teure Varianten erzeugen kann.
@@ -18,6 +20,16 @@ enum ImagePreset: string
 
     /** Winzige, weichgezeichnete Vorschau (≈ 1 KB), solange das eigentliche Bild lädt („Blur-up“). */
     case Tiny = 'tiny';
+
+    /** Die vorberechnete Datei dieser Variante. */
+    public function file(): MediaFile
+    {
+        return match ($this) {
+            self::Thumb => MediaFile::Thumb,
+            self::Display => MediaFile::Display,
+            self::Tiny => MediaFile::Tiny,
+        };
+    }
 
     /**
      * @return list<string>

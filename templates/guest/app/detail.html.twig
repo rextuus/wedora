@@ -16,7 +16,7 @@
                 Dein Browser kann dieses Video nicht abspielen.
             </video>
         {% elseif media.ready %}
-            <img class="detail__media" src="{{ media_url(media, 'image/display') }}" alt="{{ media.caption ?: 'Foto von ' ~ (media.uploaderGuest.displayName ?? 'einem Gast') }}">
+            <img class="detail__media" src="{{ media_url(media, 'image/display') }}" alt="{{ media.caption ?: 'Foto von ' ~ (media.uploaderGuest.displayName ?? 'einem Gast') }}" fetchpriority="high" decoding="async"{% if media.width and media.height %} width="{{ media.width }}" height="{{ media.height }}"{% endif %}>
         {% else %}
             <div class="detail__placeholder">{{ media.processingStatus.value == 'failed' ? (media.processingError ?: 'Verarbeitung fehlgeschlagen') : 'Wird noch verarbeitet …' }}</div>
         {% endif %}

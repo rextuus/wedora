@@ -31,9 +31,26 @@ final class MediaAccessTokenSignerTest extends TestCase
         $signer = new MediaAccessTokenSigner(self::SECRET, $clock, 900);
         $issued = $signer->issue('asset-1', 'guest-42');
 
-        $clock->modify('+901 seconds');
+        $clock->modify('+1800 seconds');
+        self::assertNotNull($signer->verify($issued), 'Gilt bis zur übernächsten Zeitgrenze.');
 
+        $clock->modify('+1 second');
         self::assertNull($signer->verify($issued));
+    }
+
+    public function testSameWindowGivesTheSameTokenSoBrowsersCanCacheIt(): void
+    {
+        $clock = new MockClock('2026-10-19 12:00:05');
+        $signer = new MediaAccessTokenSigner(self::SECRET, $clock, 900);
+        $first = $signer->issue('asset-1', 'guest-42');
+
+        $clock->modify('+10 minutes');
+        self::assertSame($first, $signer->issue('asset-1', 'guest-42'));
+
+        $clock->modify('+5 minutes');
+        $next = $signer->issue('asset-1', 'guest-42');
+        self::assertNotSame($first, $next, 'Neues Zeitfenster, neue URL.');
+        self::assertGreaterThanOrEqual(900, (int) $signer->verify($next)?->expiresAt - $clock->now()->getTimestamp());
     }
 
     public function testTamperedPayloadIsRejected(): void

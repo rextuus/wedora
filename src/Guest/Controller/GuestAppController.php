@@ -5,10 +5,8 @@ declare(strict_types=1);
 namespace App\Guest\Controller;
 
 use App\Challenge\ChallengeProgress;
+use App\Challenge\ChallengeWheel;
 use App\Challenge\DrinkLock;
-use App\Challenge\Entity\Challenge;
-use App\Challenge\PortraitBuddy;
-use App\Challenge\Repository\ChallengeRepository;
 use App\Gallery\GalleryFilter;
 use App\Gallery\GalleryQuery;
 use App\Gallery\MagazineLayout;
@@ -19,7 +17,6 @@ use App\Guestbook\GuestbookFeed;
 use App\Media\Entity\Media;
 use App\Media\MediaType;
 use App\Media\Repository\MediaRepository;
-use App\Poll\CouplePoll;
 use App\Security\Guest\GuestUser;
 use App\Security\Voter\MediaVoter;
 use App\Security\Voter\ModuleVoter;
@@ -47,12 +44,11 @@ final class GuestAppController extends AbstractController
     public function __construct(
         private readonly GalleryQuery $gallery,
         private readonly LikeService $likes,
-        private readonly ChallengeRepository $challenges,
         private readonly ChallengeProgress $progress,
         private readonly MediaRepository $media,
         private readonly ClockInterface $clock,
         private readonly PortraitService $portraits,
-        private readonly CouplePoll $poll,
+        private readonly ChallengeWheel $wheel,
     ) {}
 
     #[Route('', name: 'guest_home', methods: ['GET'])]
@@ -61,11 +57,13 @@ final class GuestAppController extends AbstractController
         $guest = $this->guest();
         $this->portraits->expireIfStale($guest);
         $wedding = $guest->getWedding();
-        $challenges = $this->moduleOn($wedding, ModuleType::Challenges) ? $this->forGuests($wedding) : [];
-        $done = $this->progress->completedBy($guest, $challenges);
+        $offered = $this->moduleOn($wedding, ModuleType::Challenges) ? $this->wheel->offered($wedding) : [];
+        $challenges = $this->wheel->visible($guest, $offered);
+        $done = $this->progress->completedBy($guest, $offered);
         $now = $this->now();
-        $active = null;
-        foreach ($challenges as $challenge) {
+        // Mit Glücksrad steht die gezogene, noch offene Aufgabe vorn; sonst die erste offene.
+        $active = $this->wheel->current($guest, $offered, $done);
+        foreach ($active ? [] : $challenges as $challenge) {
             if ($challenge->acceptsAt($now) && !array_key_exists($challenge->getId()->toRfc4122(), $done)) {
                 $active = $challenge;
                 break;
@@ -83,7 +81,8 @@ final class GuestAppController extends AbstractController
         return $this->page('guest/app/home.html.twig', $guest, 'home', [
             'challenges' => $challenges,
             'activeChallenge' => $active,
-            'completed' => $done,
+            'canSpin' => null === $active && [] !== $this->wheel->pool($guest, $offered, $done),
+            'completed' => ChallengeWheel::doneAmong($done, $challenges),
             'participants' => $this->progress->participants($challenges),
             'fresh' => $fresh,
             'mosaic' => $mosaic,
@@ -146,7 +145,7 @@ final class GuestAppController extends AbstractController
         $guest = $this->guest();
         $items = $this->gallery->mine($guest);
         $challenges = $this->moduleOn($guest->getWedding(), ModuleType::Challenges)
-            ? $this->forGuests($guest->getWedding())
+            ? $this->wheel->visible($guest, $this->wheel->offered($guest->getWedding()))
             : [];
 
         return $this->page('guest/app/album.html.twig', $guest, 'album', [
@@ -155,58 +154,6 @@ final class GuestAppController extends AbstractController
             'videos' => count(array_filter($items, static fn(Media $m): bool => MediaType::Video === $m->getType())),
             'challenges' => $challenges,
             'completed' => $this->progress->completedBy($guest, $challenges),
-        ]);
-    }
-
-    #[Route('/aufgaben', name: 'guest_challenges', methods: ['GET'])]
-    public function challenges(PortraitBuddy $buddies): Response
-    {
-        $guest = $this->guest();
-        $wedding = $guest->getWedding();
-        $this->requireModule($wedding, ModuleType::Challenges);
-        $challenges = $this->forGuests($wedding);
-        return $this->page('guest/app/challenges.html.twig', $guest, 'challenges', [
-            'challenges' => $challenges,
-            'completed' => $this->progress->completedBy($guest, $challenges),
-            'participants' => $this->progress->participants($challenges),
-            'leaderboard' => $wedding->areChallengePointsEnabled() ? $this->progress->leaderboard($wedding) : [],
-            'now' => $this->now(),
-            'poll' => $this->poll->isVisibleIn($wedding) ? $this->poll->progressOf($guest) : null,
-            'portraitOffered' => $this->portraits->isOfferedTo($wedding),
-            'buddyStatus' => $buddies->statuses($guest, $challenges),
-        ]);
-    }
-
-    #[Route('/aufgaben/{id}', name: 'guest_challenge', methods: ['GET'])]
-    public function challenge(string $id, PortraitBuddy $buddies): Response
-    {
-        $guest = $this->guest();
-        $this->requireModule($guest->getWedding(), ModuleType::Challenges);
-        $challenge = $this->ownChallenge($guest, $id);
-        if ($challenge->getMediaType()->isPoll()) {
-            return $this->redirectToRoute('guest_poll', ['slug' => $guest->getWedding()->getSlug()]);
-        }
-
-        // Eigene Beiträge stehen oben (auch private und noch nicht freigegebene), unten nur die der anderen.
-        $mine = $this->gallery->mineFor($guest, $challenge);
-        $contributions = array_values(array_filter(
-            $this->gallery->shared($guest, GalleryFilter::All, null, 200),
-            static fn(Media $m): bool => (
-                ($m->getChallenge()?->getId()->equals($challenge->getId()) ?? false)
-                && !($m->getUploaderGuest()?->getId()->equals($guest->getId()) ?? false)
-            ),
-        ));
-
-        return $this->page('guest/app/challenge.html.twig', $guest, 'challenges', [
-            'challenge' => $challenge,
-            'done' => array_key_exists($challenge->getId()->toRfc4122(), $this->progress->completedBy($guest, [
-                $challenge,
-            ])),
-            'participants' => $this->progress->participants([$challenge])[$challenge->getId()->toRfc4122()] ?? 0,
-            'mine' => $mine,
-            'contributions' => array_slice($contributions, 0, 24),
-            'now' => $this->now(),
-            'buddy' => $buddies->view($guest, $challenge),
         ]);
     }
 
@@ -243,31 +190,6 @@ final class GuestAppController extends AbstractController
         }
 
         return $media;
-    }
-
-    private function ownChallenge(Guest $guest, string $id): Challenge
-    {
-        $challenge = Uuid::isValid($id) ? $this->challenges->find(Uuid::fromString($id)) : null;
-        if (null === $challenge || $challenge->getWedding() !== $guest->getWedding() || !$challenge->isEnabled()) {
-            throw new NotFoundHttpException();
-        }
-
-        return $challenge;
-    }
-
-    /**
-     * Eingeschaltete Aufgaben; die Umfrage nur, wenn Gäste sie sehen können (z. B. mit mindestens einer Frage).
-     *
-     * @return list<Challenge>
-     */
-    private function forGuests(Wedding $wedding): array
-    {
-        $visible = $this->poll->isVisibleIn($wedding);
-
-        return array_values(array_filter(
-            $this->challenges->forWedding($wedding, true),
-            static fn(Challenge $c): bool => $visible || !$c->getMediaType()->isPoll(),
-        ));
     }
 
     private function moduleOn(Wedding $wedding, ModuleType $type): bool

@@ -87,6 +87,7 @@ prod-up: ## Produktion: Images bauen, Datenbank migrieren, alles starten
 	$(PROD_PHP) bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
 	$(PROD_DC) up -d --wait
 	$(PROD_PHP) bin/console messenger:stop-workers
+	$(PROD_PHP) bin/console app:media:variants
 
 prod-down: ## Produktion: stoppen (Daten bleiben in den Volumes)
 	$(PROD_DC) down

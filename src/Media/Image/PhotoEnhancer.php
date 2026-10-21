@@ -8,10 +8,8 @@ use App\Media\MediaId;
 use App\Media\Storage\MediaFile;
 use App\Media\Storage\MediaStorage;
 use RuntimeException;
-use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Process\Process;
-use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
  * „Fotos automatisch angleichen“: eine ruhigere Fassung jedes Fotos für die Anzeige, das Original bleibt.
@@ -35,11 +33,8 @@ final readonly class PhotoEnhancer
             . 'unsharp=5:5:0.25:5:5:0';
 
     public function __construct(
-        private HttpClientInterface $httpClient,
-        private ImgproxyUrlSigner $imgproxy,
+        private ImgproxyClient $imgproxy,
         private MediaStorage $storage,
-        #[Autowire(env: 'IMGPROXY_INTERNAL_URL')]
-        private string $imgproxyUrl,
         private string $ffmpeg = 'ffmpeg',
     ) {}
 
@@ -53,23 +48,12 @@ final readonly class PhotoEnhancer
         $enhanced = $target . '.part.jpg';
 
         try {
-            $source = 'local:///' . $this->storage->relativePath($id, MediaFile::Original);
-            $url =
-                rtrim($this->imgproxyUrl, '/')
-                . $this->imgproxy->sign(
-                    $source,
-                    [
-                        sprintf('rs:fit:%1$d:%1$d:0', self::MAX_EDGE),
-                        'q:92',
-                    ],
-                    'jpg',
-                );
-            $response = $this->httpClient->request('GET', $url, ['timeout' => 60]);
-            if (200 !== $response->getStatusCode()) {
-                throw new RuntimeException(sprintf('imgproxy antwortet mit %d.', $response->getStatusCode()));
-            }
-
-            new Filesystem()->dumpFile($oriented, $response->getContent());
+            new Filesystem()->dumpFile($oriented, $this->imgproxy->fetch(
+                $id,
+                MediaFile::Original,
+                [sprintf('rs:fit:%1$d:%1$d:0', self::MAX_EDGE), 'q:92'],
+                'jpg',
+            ));
 
             $process = new Process([
                 $this->ffmpeg,
@@ -93,6 +77,7 @@ final readonly class PhotoEnhancer
                 throw new RuntimeException('Foto konnte nicht angeglichen werden: ' . trim($process->getErrorOutput()));
             }
 
+            new Filesystem()->chmod($enhanced, 0o644);
             $this->storage->adopt($id, MediaFile::Enhanced, $enhanced);
 
             return $this->storage->size($id, MediaFile::Enhanced);

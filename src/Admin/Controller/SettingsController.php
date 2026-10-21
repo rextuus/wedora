@@ -118,6 +118,7 @@ final class SettingsController extends AdminController
         }
 
         $wedding->enableChallengePoints($request->request->has('points'));
+        $wedding->drawChallengesByWheel($request->request->has('challenge_wheel'));
         $wedding->enablePortraits($request->request->has('portraits'));
         $wedding->enablePortraitGadgets($request->request->has('portrait_gadgets'));
         $wedding->decidePortraitStylesBy(

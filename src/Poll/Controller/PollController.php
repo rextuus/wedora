@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Poll\Controller;
 
+use App\Challenge\ChallengeWheel;
 use App\Guest\Controller\GuestActionController;
 use App\Guest\Entity\Guest;
 use App\Poll\CouplePoll;
@@ -34,6 +35,7 @@ final class PollController extends AbstractController
     public function __construct(
         private readonly CouplePoll $game,
         private readonly PollQuestionRepository $questions,
+        private readonly ChallengeWheel $wheel,
     ) {}
 
     #[Route('', name: 'guest_poll', methods: ['GET'])]
@@ -41,7 +43,7 @@ final class PollController extends AbstractController
     {
         $guest = $this->guest();
         $wedding = $guest->getWedding();
-        if (!$this->game->isVisibleIn($wedding)) {
+        if (!$this->game->isVisibleIn($wedding) || !$this->drawn($guest)) {
             throw new NotFoundHttpException();
         }
 
@@ -72,6 +74,10 @@ final class PollController extends AbstractController
             throw new AccessDeniedHttpException('Ungültiges Formular-Token.');
         }
 
+        if (!$this->drawn($guest)) {
+            throw new NotFoundHttpException();
+        }
+
         $choice = PollChoice::tryFrom($request->request->getString('choice')) ?? throw new BadRequestHttpException(
             'Unbekannte Auswahl.',
         );
@@ -86,6 +92,14 @@ final class PollController extends AbstractController
             'slug' => $guest->getWedding()->getSlug(),
             '_fragment' => 'frage-' . $id,
         ]);
+    }
+
+    /** Mit Glücksrad nur, wenn der Gast die Umfrage gezogen hat. */
+    private function drawn(Guest $guest): bool
+    {
+        $challenge = $this->game->challenge($guest->getWedding());
+
+        return null === $challenge || $this->wheel->allows($guest, $challenge);
     }
 
     private function question(Guest $guest, string $id): PollQuestion

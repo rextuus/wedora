@@ -7,6 +7,9 @@ namespace App\Tests\Integration\Media;
 use App\Guest\Entity\Guest;
 use App\Media\Access\MediaAccessTokenSigner;
 use App\Media\Entity\Media;
+use App\Media\Image\ImagePreset;
+use App\Media\Image\ImageVariants;
+use App\Media\Image\ImgproxyClient;
 use App\Media\Image\ImgproxyUrlSigner;
 use App\Media\Image\PhotoEnhancer;
 use App\Media\MediaId;
@@ -84,7 +87,7 @@ final class ProtectedMediaDeliveryTest extends IntegrationTestCase
         self::assertSame(200, $full['status']);
         self::assertSame('video/mp4', $full['headers']['content-type'][0] ?? null);
         self::assertSame($this->storage->size($id, MediaFile::Video), strlen($full['body']));
-        self::assertPrivateNoStore($full['headers']);
+        self::assertPrivateUntilExpiry($full['headers']);
         self::assertArrayNotHasKey(
             'x-accel-redirect',
             $full['headers'],
@@ -109,7 +112,7 @@ final class ProtectedMediaDeliveryTest extends IntegrationTestCase
         $size = getimagesizefromstring($thumb['body']);
         self::assertNotFalse($size);
         self::assertLessThanOrEqual(720, max($size[0], $size[1]));
-        self::assertPrivateNoStore($thumb['headers']);
+        self::assertPrivateUntilExpiry($thumb['headers']);
 
         self::assertSame(200, $this->get("/media/{$imageToken}/image/display")['status']);
         self::assertSame(
@@ -218,12 +221,7 @@ final class ProtectedMediaDeliveryTest extends IntegrationTestCase
         $before = $this->get("/media/{$token}/image/display");
         self::assertSame(200, $before['status']);
 
-        $enhancer = new PhotoEnhancer(
-            $this->http,
-            new ImgproxyUrlSigner(self::env('IMGPROXY_KEY'), self::env('IMGPROXY_SALT')),
-            $this->storage,
-            'http://imgproxy:8080',
-        );
+        $enhancer = new PhotoEnhancer($this->imgproxyClient(), $this->storage);
         $bytes = $enhancer->enhance($image);
         self::assertGreaterThan(0, $bytes);
         $path = $this->storage->localPath($image, MediaFile::Enhanced);
@@ -241,6 +239,41 @@ final class ProtectedMediaDeliveryTest extends IntegrationTestCase
             md5($before['body']),
             md5($this->get("/media/{$token}/image/display")['body']),
             'Wieder das Original.',
+        );
+    }
+
+    public function testPrecomputedVariantsAreServedAsFilesWithoutImgproxy(): void
+    {
+        $image = $this->createImage();
+        $token = $this->grantAndIssue($image);
+        $variants = new ImageVariants($this->imgproxyClient(), $this->storage);
+
+        $variants->generate($image);
+        foreach (ImagePreset::cases() as $preset) {
+            $file = $this->storage->localPath($image, $preset->file());
+            self::assertFileExists($file);
+            $served = $this->get("/media/{$token}/image/{$preset->value}");
+            self::assertSame(200, $served['status']);
+            self::assertSame('image/webp', $served['headers']['content-type'][0] ?? null);
+            self::assertSame(
+                (string) file_get_contents($file),
+                $served['body'],
+                'Die vorberechnete Datei, unverändert.',
+            );
+            self::assertPrivateUntilExpiry($served['headers']);
+        }
+
+        self::assertSame([], glob(dirname($this->storage->localPath($image, MediaFile::Thumb)) . '/*.part'));
+        self::assertGreaterThan(0, $variants->derivedBytes($image));
+    }
+
+    private function imgproxyClient(): ImgproxyClient
+    {
+        return new ImgproxyClient(
+            $this->http,
+            new ImgproxyUrlSigner(self::env('IMGPROXY_KEY'), self::env('IMGPROXY_SALT')),
+            $this->storage,
+            'http://imgproxy:8080',
         );
     }
 
@@ -305,13 +338,17 @@ final class ProtectedMediaDeliveryTest extends IntegrationTestCase
     }
 
     /**
+     * Der Browser darf zwischenspeichern, solange die URL gilt (Token läuft nach 15–30 Minuten ab).
+     *
      * @param array<string, list<string>> $headers
      */
-    private static function assertPrivateNoStore(array $headers): void
+    private static function assertPrivateUntilExpiry(array $headers): void
     {
         $cacheControl = implode(',', $headers['cache-control'] ?? []);
-        self::assertStringContainsString('no-store', $cacheControl);
-        self::assertStringContainsString('private', $cacheControl);
+        self::assertStringContainsString('private', $cacheControl, 'Nie in gemeinsamen Caches.');
+        self::assertSame(1, preg_match('/max-age=(\d+)/', $cacheControl, $m), 'Zwischenspeichern erlaubt.');
+        self::assertGreaterThanOrEqual(900, (int) $m[1], 'Mindestens ein Zeitfenster lang.');
+        self::assertLessThanOrEqual(1800, (int) $m[1], 'Höchstens bis die URL abläuft.');
     }
 
     /**

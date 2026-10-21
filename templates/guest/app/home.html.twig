@@ -76,11 +76,11 @@
     {% endif %}
 
 
-    {% if challenges is not empty %}
+    {% if challenges is not empty or canSpin %}
         <section aria-labelledby="mission-title">
             <div class="section-row">
                 <h2 id="mission-title" class="overline">{{ ui.icon('sparkle', 15) }} Aufgaben</h2>
-                <span class="overline">{{ completed|length }} / {{ challenges|length }}</span>
+                <span class="overline">{% if wedding.drawsChallengesByWheel() %}{{ completed|length }} erledigt{% else %}{{ completed|length }} / {{ challenges|length }}{% endif %}</span>
             </div>
             {% if activeChallenge %}
                 {% set aid = activeChallenge.id.toRfc4122 %}
@@ -99,11 +99,20 @@
                         <a class="button button--primary" href="{{ path('guest_upload', {slug: wedding.slug, aufgabe: aid}) }}">{{ ui.icon('camera', 18) }} {{ activeChallenge.mediaType.value == 'video' ? 'Video drehen' : 'Mitmachen' }}</a>
                     {% endif %}
                 </div>
+            {% elseif canSpin %}
+                <div class="mission card mission--quiet">
+                    {{ deco.motif('confetti', 72) }}
+                    <p class="lead">Dreh am Glücksrad und hol dir eine Aufgabe!</p>
+                    <a class="button button--primary" href="{{ path('guest_challenges', {slug: wedding.slug}) }}">{{ ui.icon('sparkle', 18) }} Zum Glücksrad</a>
+                </div>
             {% else %}
                 <div class="mission card mission--quiet">
                     {{ deco.motif(completed|length == challenges|length ? 'bottle' : 'polaroids', 72) }}
                     <p class="lead">{{ completed|length == challenges|length ? 'Alle Aufgaben erledigt – großartig!' : 'Gerade ist keine Aufgabe aktiv. Schau später wieder vorbei.' }}</p>
                 </div>
+            {% endif %}
+            {% if canSpin and activeChallenge %}
+                <p class="spaced"><a class="text-link" href="{{ path('guest_challenges', {slug: wedding.slug}) }}">{{ ui.icon('sparkle', 14) }} Am Glücksrad eine weitere Aufgabe ziehen</a></p>
             {% endif %}
             {% set upcoming = challenges|filter(c => c != activeChallenge)|slice(0, 3) %}
             {% if upcoming is not empty %}<ul class="mission-list">

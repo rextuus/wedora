@@ -34,6 +34,8 @@
                 </fieldset>
             {% endfor %}
             <label class="toggle"><input type="checkbox" name="points"{% if wedding.areChallengePointsEnabled() %} checked{% endif %}> Punkte und Rangliste für Aufgaben anzeigen</label>
+            <label class="toggle"><input type="checkbox" name="challenge_wheel"{% if wedding.drawsChallengesByWheel() %} checked{% endif %}> Aufgaben per Glücksrad ziehen</label>
+            <p class="muted">Gäste sehen dann nicht alle Aufgaben, sondern drehen am Glücksrad und bekommen eine zufällige. Erst wenn sie erledigt ist (oder ihr Zeitfenster vorbei), dürfen sie weiterdrehen. First Drink, Last Drink und das Porträt bleiben immer sichtbar; gezogene Aufgaben auch.</p>
             <label class="toggle"><input type="checkbox" name="portraits"{% if wedding.arePortraitsEnabled() %} checked{% endif %}> Gezeichnete Porträts: Gäste können aus einem Selfie eine Linienzeichnung erstellen lassen</label>
             <p class="notice">Kostenbremse (alle Hochzeiten zusammen): heute <strong>{{ aiUsage.today }} von {{ aiUsage.dailyLimit }}</strong>, diesen Monat <strong>{{ aiUsage.month }} von {{ aiUsage.monthlyLimit }}</strong> Zeichnungen. Ist eine Grenze erreicht, geht nichts mehr an Gemini. Die Grenzen stellt die Plattformadministration unter „Alle Hochzeiten“ ein.</p>
             <label class="toggle"><input type="checkbox" name="portrait_gadgets"{% if wedding.arePortraitGadgetsEnabled() %} checked{% endif %}> Überraschungs-Accessoire mitzeichnen (Krone, Federboa, Taube, Herz-Tattoo …)</label>

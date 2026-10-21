@@ -34,7 +34,7 @@
                 <li class="card moderation-item">
                     <p><span class="status status--error">{{ report.reason.label }}</span> <span class="muted">gemeldet von {{ report.reporter.displayName ?? 'einem Gast' }}, {{ report.createdAt|ago }}</span></p>
                     {% if report.note %}<p>„{{ report.note }}“</p>{% endif %}
-                    {% if item.ready %}<img class="moderation-item__media" src="{{ media_url(item, 'image/thumb') }}" alt="{{ item.caption ?: 'Gemeldeter Beitrag' }}" loading="lazy">{% endif %}
+                    {% if item.ready %}<img class="moderation-item__media" src="{{ media_url(item, 'image/thumb') }}" alt="{{ item.caption ?: 'Gemeldeter Beitrag' }}" loading="lazy" decoding="async">{% endif %}
                     <p class="muted">Von {{ item.uploaderGuest.displayName ?? 'Gast' }} · {{ item.createdAt|ago }}</p>
                     <div class="button-row">
                         <form method="post" action="{{ path('admin_report_resolve', {slug: wedding.slug, id: report.id}) }}">{{ include('admin/_csrf.html.twig') }}<button class="button button--secondary" type="submit">In Ordnung, bleibt sichtbar</button></form>

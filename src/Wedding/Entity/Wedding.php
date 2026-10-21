@@ -54,6 +54,10 @@ class Wedding
     #[ORM\Column]
     private bool $challengePointsEnabled = false;
 
+    /** Glücksrad: Gäste sehen nicht alle Aufgaben, sondern ziehen immer eine (First/Last Drink ausgenommen). */
+    #[ORM\Column(options: ['default' => false])]
+    private bool $challengeWheel = false;
+
     /** Gäste dürfen ein Selfie per KI (Gemini) zu einer Linienzeichnung umwandeln lassen. Aus, bis das Brautpaar es einschaltet. */
     #[ORM\Column]
     private bool $portraitsEnabled = false;
@@ -200,6 +204,16 @@ class Wedding
     public function enableChallengePoints(bool $enabled): void
     {
         $this->challengePointsEnabled = $enabled;
+    }
+
+    public function drawsChallengesByWheel(): bool
+    {
+        return $this->challengeWheel;
+    }
+
+    public function drawChallengesByWheel(bool $wheel): void
+    {
+        $this->challengeWheel = $wheel;
     }
 
     public function arePortraitsEnabled(): bool

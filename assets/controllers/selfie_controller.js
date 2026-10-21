@@ -1,16 +1,33 @@
 import { Controller } from '@hotwired/stimulus';
 
 /*
- * Selfie-Vorschau und Verkleinerung vor dem Hochladen (lange Seite max. 1600 px, JPEG):
+ * Selfie (Kamera) oder Foto aus der Mediathek wählen, Vorschau und Verkleinerung vor dem Hochladen (lange Seite max. 1600 px, JPEG):
  * schneller, unter der Server-Grenze und es verlässt weniger vom Originalfoto das Gerät.
  * Kann der Browser das Format nicht lesen (z. B. HEIC), geht das Original unverändert hoch.
  */
 const LONG_EDGE = 1600;
 
 export default class extends Controller {
-    static targets = ['input', 'preview', 'placeholder', 'submit'];
+    static targets = ['input', 'preview', 'placeholder', 'submit', 'sources'];
+
+    connect() {
+        // Die Knöpfe brauchen JavaScript; ohne bleibt die Fläche, die Kamera und Mediathek anbietet.
+        if (this.hasSourcesTarget) this.sourcesTarget.hidden = false;
+    }
+
+    camera() {
+        this.inputTarget.setAttribute('capture', 'user');
+        this.inputTarget.click();
+    }
+
+    library() {
+        this.inputTarget.removeAttribute('capture');
+        this.inputTarget.click();
+    }
 
     preview() {
+        // Die große Fläche soll danach wieder beides anbieten.
+        this.inputTarget.removeAttribute('capture');
         const file = this.inputTarget.files[0];
         if (!file) return;
         if (this.url) URL.revokeObjectURL(this.url);

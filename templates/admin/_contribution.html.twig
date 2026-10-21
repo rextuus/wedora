@@ -7,7 +7,7 @@
             {% if item.type.value == 'video' %}
                 <video class="moderation-item__media" controls preload="none" poster="{{ media_url(item, 'image/thumb') }}"><source src="{{ media_url(item, 'video.mp4') }}" type="video/mp4"></video>
             {% else %}
-                <img class="moderation-item__media" src="{{ media_url(item, 'image/thumb') }}" alt="{{ item.caption ?: 'Foto' }}" loading="lazy">
+                <img class="moderation-item__media" src="{{ media_url(item, 'image/thumb') }}" alt="{{ item.caption ?: 'Foto' }}" loading="lazy" decoding="async">
             {% endif %}
         {% else %}
             <p class="detail__placeholder">{{ item.processingStatus.value == 'failed' ? 'Verarbeitung fehlgeschlagen' : 'Wird noch verarbeitet …' }}</p>

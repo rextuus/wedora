@@ -13,6 +13,9 @@ use SensitiveParameter;
  *
  * Begrenzt den Schaden weitergegebener Links (Ablauf). Die Berechtigung selbst wird
  * zusätzlich bei jeder Anfrage serverseitig geprüft (MediaAccessChecker).
+ *
+ * Der Ablauf liegt auf festen Zeitgrenzen (ein bis zwei TTL in der Zukunft): Innerhalb eines Zeitfensters
+ * bekommt dasselbe Bild für denselben Betrachter dieselbe URL, so kann der Browser es zwischenspeichern.
  */
 final readonly class MediaAccessTokenSigner
 {
@@ -32,7 +35,7 @@ final readonly class MediaAccessTokenSigner
         $payload = self::base64Url(implode('|', [
             $mediaId,
             $subject,
-            (string) ($this->clock->now()->getTimestamp() + $this->ttlSeconds),
+            (string) $this->expiryFor($this->clock->now()->getTimestamp()),
         ]));
 
         return $payload . '.' . $this->signature($payload);
@@ -66,6 +69,11 @@ final readonly class MediaAccessTokenSigner
         }
 
         return new MediaAccessToken($fields[0], $fields[1], $expiresAt);
+    }
+
+    private function expiryFor(int $now): int
+    {
+        return (intdiv($now, $this->ttlSeconds) + 2) * $this->ttlSeconds;
     }
 
     private function signature(string $payload): string

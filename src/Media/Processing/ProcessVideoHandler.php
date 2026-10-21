@@ -10,6 +10,7 @@ use App\Media\ProcessingStatus;
 use App\Media\Repository\MediaRepository;
 use App\Media\Storage\MediaFile;
 use App\Media\Storage\MediaStorage;
+use App\Media\Video\VideoProbe;
 use App\Media\Video\VideoRejected;
 use App\Media\Video\VideoTranscoder;
 use DateTimeImmutable;
@@ -18,6 +19,7 @@ use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
 
@@ -36,6 +38,7 @@ final readonly class ProcessVideoHandler
         private EntityManagerInterface $em,
         private ClockInterface $clock,
         private LoggerInterface $logger,
+        private MessageBusInterface $bus,
         #[Autowire('%env(int:VIDEO_FFMPEG_THREADS)%')]
         private int $threads,
     ) {}
@@ -74,8 +77,15 @@ final readonly class ProcessVideoHandler
 
         $derived = $this->storage->size($id, MediaFile::Video) + $this->storage->size($id, MediaFile::Poster);
         $this->record($media, $started, $queueWaitMs, $derived, null, $probe->videoCodec);
+        $this->ready($media, $derived, $probe);
+    }
+
+    /** Fertig; die Vorschaubilder aus dem Standbild kommen per eigenem Auftrag (ein Fehler dort lässt das Video fertig). */
+    private function ready(Media $media, int $derived, VideoProbe $probe): void
+    {
         $media->markReady($derived, $probe->width, $probe->height, $probe->durationSeconds);
         $this->em->flush();
+        $this->bus->dispatch(new GenerateImageVariants($media->getId()->toRfc4122()));
     }
 
     // Flache Messwerte; eine Hilfsstruktur würde die Lesbarkeit hier nicht verbessern.

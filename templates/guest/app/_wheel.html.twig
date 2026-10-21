@@ -1,0 +1,41 @@
+{# Glücksrad: Felder per conic-gradient, Beschriftung je Feld gedreht. Das Rad hält dort, wo der Server gezogen hat. #}
+{% import 'components/icon.html.twig' as ui %}
+<section class="card wheel-card" aria-labelledby="wheel-title">
+    {% if wheel.current %}
+        <h2 id="wheel-title" class="headline-sm">Deine Aufgabe vom Glücksrad</h2>
+        <p><strong>{{ wheel.current.title }}</strong> – wenn sie erledigt ist, darfst du wieder drehen.</p>
+        <a class="button button--primary" href="{{ path('guest_challenge', {slug: wedding.slug, id: wheel.current.id}) }}">Zur Aufgabe</a>
+    {% elseif wheel.pool is empty %}
+        <h2 id="wheel-title" class="headline-sm">Glücksrad</h2>
+        <p class="muted">Gerade gibt es nichts mehr zu ziehen{{ challenges is not empty ? ' – schau später noch mal vorbei' : '' }}.</p>
+    {% else %}
+        {% set pool = wheel.pool %}
+        {% set slices = [] %}
+        {% for i in 0..max(6, pool|length) - 1 %}{% set slices = slices|merge([pool[i % pool|length]]) %}{% endfor %}
+        {% set step = 100 / slices|length %}
+        {% set colors = ['var(--sand)', 'var(--bg-elevated)', 'var(--bg-raised)'] %}
+        {% set stops = [] %}
+        {% for slice in slices %}
+            {# Abwechselnd zwei Farben; bei ungerader Anzahl bekommt das letzte Feld die dritte, damit Nachbarn nie gleich sind. #}
+            {% set color = slices|length is odd and loop.last ? colors[2] : colors[loop.index0 % 2] %}
+            {% set stops = stops|merge([color ~ ' ' ~ (loop.index0 * step) ~ '% ' ~ (loop.index * step) ~ '%']) %}
+        {% endfor %}
+        <form method="post" action="{{ path('guest_challenge_spin', {slug: wedding.slug}) }}" class="stack wheel-form"
+              data-controller="wheel" data-action="submit->wheel#spin">
+            <input type="hidden" name="_token" value="{{ csrf_token('guest-action') }}">
+            <h2 id="wheel-title" class="headline-sm">Dreh am Glücksrad</h2>
+            <p class="muted">Du bekommst eine zufällige Aufgabe. Erst wenn sie erledigt ist, darfst du wieder drehen.</p>
+            <div class="wheel" aria-hidden="true">
+                <span class="wheel__pointer"></span>
+                <div class="wheel__disc" style="--n: {{ slices|length }}; background: conic-gradient({{ stops|join(', ') }});" data-wheel-target="disc">
+                    {% for slice in slices %}
+                        <span class="wheel__label" style="--i: {{ loop.index0 }}" data-id="{{ slice.id.toRfc4122 }}"><span>{{ slice.title|length > 16 ? slice.title|slice(0, 15) ~ '…' : slice.title }}</span></span>
+                    {% endfor %}
+                </div>
+                <span class="wheel__hub">{{ ui.icon('sparkle', 22) }}</span>
+            </div>
+            <p class="wheel__result" role="status" aria-live="polite" data-wheel-target="result"></p>
+            <button class="button button--primary" type="submit" data-wheel-target="button">{{ ui.icon('sparkle', 18) }} Drehen</button>
+        </form>
+    {% endif %}
+</section>

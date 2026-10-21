@@ -10,7 +10,7 @@
         <span class="section-header__motif">{{ deco.motif('pencil', 92) }}</span>
         <p class="overline">{{ welcome ? 'Willkommen, ' ~ guest.displayName : 'Dein Porträt' }}</p>
         <h1 class="headline-lg">Lass dich <em>zeichnen</em></h1>
-        <p class="lead">Mach ein Selfie – daraus entsteht {{ wedding.letsGuestsChoosePortraitStyle() ? 'ein gezeichnetes Porträt im Stil deiner Wahl' : (wedding.portraitStyles()|length > 1 ? 'ein gezeichnetes Porträt' : 'eine feine Linienzeichnung im Stil dieser Hochzeit') }}. Erst einmal siehst nur du es – auf der Gästewand zeigen kannst du es, wenn du magst.</p>
+        <p class="lead">Mach ein Selfie oder nimm ein Foto von dir – daraus entsteht {{ wedding.letsGuestsChoosePortraitStyle() ? 'ein gezeichnetes Porträt im Stil deiner Wahl' : (wedding.portraitStyles()|length > 1 ? 'ein gezeichnetes Porträt' : 'eine feine Linienzeichnung im Stil dieser Hochzeit') }}. Erst einmal siehst nur du es – auf der Gästewand zeigen kannst du es, wenn du magst.</p>
         {{ deco.sprig(110) }}
     </header>
 
@@ -52,13 +52,19 @@
               data-controller="selfie" data-action="submit->selfie#prepare">
             <input type="hidden" name="_token" value="{{ csrf_token('guest-action') }}">
             <input type="hidden" name="welcome" value="{{ welcome ? 1 : 0 }}">
-            <h2 class="headline-sm">{{ guest.hasPortrait() ? 'Neues Porträt' : 'Dein Selfie' }}</h2>
+            <h2 class="headline-sm">{{ guest.hasPortrait() ? 'Neues Porträt' : 'Dein Foto' }}</h2>
 
+            {# Ohne capture bietet das Handy Kamera und Fotomediathek an; die Knöpfe darunter gehen direkt zu einem davon. #}
             <label class="selfie-pick">
-                <input class="visually-hidden" type="file" name="selfie" accept="image/*" capture="user" data-selfie-target="input" data-action="change->selfie#preview">
+                <input class="visually-hidden" type="file" name="selfie" accept="image/*" data-selfie-target="input" data-action="change->selfie#preview">
                 <img class="selfie-pick__preview" alt="" hidden data-selfie-target="preview">
-                <span class="selfie-pick__empty" data-selfie-target="placeholder">{{ ui.icon('camera', 28) }} Selfie aufnehmen</span>
+                <span class="selfie-pick__empty" data-selfie-target="placeholder">{{ ui.icon('camera', 28) }} Selfie oder Foto von dir</span>
             </label>
+            <div class="selfie-sources" hidden data-selfie-target="sources">
+                <button class="button button--secondary" type="button" data-action="selfie#camera">{{ ui.icon('camera', 18) }} Selfie aufnehmen</button>
+                <button class="button button--secondary" type="button" data-action="selfie#library">{{ ui.icon('photos', 18) }} Foto auswählen</button>
+            </div>
+            <p class="muted center">Am besten ein Foto, auf dem nur du gut zu sehen bist.</p>
 
             {% set styles = wedding.portraitStyles() %}
             {% if wedding.letsGuestsChoosePortraitStyle() %}

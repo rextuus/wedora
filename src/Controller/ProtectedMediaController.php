@@ -7,11 +7,13 @@ namespace App\Controller;
 use App\Media\Access\MediaAccessChecker;
 use App\Media\Access\MediaAccessTokenSigner;
 use App\Media\Image\ImagePreset;
+use App\Media\Image\ImageVariants;
 use App\Media\Image\ImgproxyUrlSigner;
 use App\Media\MediaId;
 use App\Media\Storage\MediaFile;
 use App\Media\Storage\MediaStorage;
 use InvalidArgumentException;
+use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
 use SensitiveParameter;
 use Symfony\Component\HttpFoundation\Response;
@@ -29,7 +31,9 @@ final readonly class ProtectedMediaController
         private MediaAccessChecker $accessChecker,
         private MediaStorage $storage,
         private ImgproxyUrlSigner $imgproxy,
+        private ImageVariants $variants,
         private LoggerInterface $logger,
+        private ClockInterface $clock,
     ) {}
 
     #[Route(
@@ -69,9 +73,12 @@ final readonly class ProtectedMediaController
             return self::status(Response::HTTP_NOT_FOUND);
         }
 
+        // Nur im Browser des Betrachters zwischenspeichern, und nur solange die URL gilt (Caddy übernimmt den Wert).
+        $maxAge = max(0, $access->expiresAt - $this->clock->now()->getTimestamp());
+
         return new Response('', Response::HTTP_OK, [
             'X-Accel-Redirect' => $redirect,
-            'Cache-Control' => 'private, no-store',
+            'Cache-Control' => sprintf('private, max-age=%d', $maxAge),
         ]);
     }
 
@@ -87,16 +94,14 @@ final readonly class ProtectedMediaController
     private function imageRedirect(MediaId $id, string $variant): ?string
     {
         $preset = ImagePreset::from(substr($variant, strlen('image/')));
-        // Bei Videos dient das Standbild als Bildquelle; bei Fotos die angeglichene Fassung, falls vorhanden.
-        $source = MediaFile::Original;
-        foreach ([MediaFile::Poster, MediaFile::Enhanced] as $candidate) {
-            if ($this->storage->exists($id, $candidate)) {
-                $source = $candidate;
-                break;
-            }
+        // Vorberechnet liefert Caddy die Datei direkt; sonst rechnet imgproxy (z. B. kurz nach dem Upload).
+        if ($this->variants->has($id, $preset)) {
+            return '/_protected/files/' . $this->storage->relativePath($id, $preset->file());
         }
 
-        if (!$this->storage->exists($id, $source)) {
+        // Bei Videos dient das Standbild als Bildquelle; bei Fotos die angeglichene Fassung, falls vorhanden.
+        $source = $this->variants->source($id);
+        if (null === $source) {
             return null;
         }
 

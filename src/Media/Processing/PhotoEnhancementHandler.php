@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Media\Processing;
 
+use App\Media\Image\ImageVariants;
 use App\Media\Image\PhotoEnhancer;
+use App\Media\MediaId;
 use App\Media\MediaType;
 use App\Media\Repository\MediaRepository;
 use App\Wedding\Repository\WeddingRepository;
@@ -23,6 +25,7 @@ final readonly class PhotoEnhancementHandler
         private MediaRepository $media,
         private WeddingRepository $weddings,
         private PhotoEnhancer $enhancer,
+        private ImageVariants $variants,
         private EntityManagerInterface $em,
         private MessageBusInterface $bus,
     ) {}
@@ -35,14 +38,23 @@ final readonly class PhotoEnhancementHandler
             return;
         }
 
-        if ($media->getWedding()->getPresentation()->enhancesPhotos()) {
-            $media->derivedChanged($this->enhancer->enhance($media->mediaId()));
-        } else {
-            $this->enhancer->remove($media->mediaId());
-            $media->derivedChanged(0);
+        $id = $media->mediaId();
+        $this->applySetting($id, $media->getWedding()->getPresentation()->enhancesPhotos());
+        // Die Quelle der Varianten hat sich geändert.
+        $this->variants->generate($id);
+        $media->derivedChanged($this->variants->derivedBytes($id));
+        $this->em->flush();
+    }
+
+    private function applySetting(MediaId $id, bool $enhance): void
+    {
+        if ($enhance) {
+            $this->enhancer->enhance($id);
+
+            return;
         }
 
-        $this->em->flush();
+        $this->enhancer->remove($id);
     }
 
     #[AsMessageHandler]

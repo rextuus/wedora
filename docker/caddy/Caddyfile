@@ -38,7 +38,8 @@
 			rewrite * {rp.header.X-Accel-Redirect}
 
 			route {
-				header Cache-Control "private, no-store"
+				# Wie von Symfony vorgegeben: nur im Browser des Betrachters, solange die URL gilt.
+				header Cache-Control {rp.header.Cache-Control}
 
 				handle_path /_protected/files/* {
 					root * /srv/media
