@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM php:8.4.26-fpm-alpine AS base
+FROM php:8.4.27-fpm-alpine AS base
 
 RUN apk add --no-cache icu-libs icu-data-full libzip fcgi ffmpeg \
  && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS icu-dev libzip-dev linux-headers \

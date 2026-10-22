@@ -6,7 +6,7 @@
         {% endfor %}
     </div>
     {% if next %}
-        <turbo-frame id="gallery-page-{{ next }}" src="{{ path('guest_gallery', {slug: wedding.slug, filter: filter.value, vor: next}) }}" loading="lazy" class="more">
+        <turbo-frame id="gallery-page-{{ next }}" src="{{ path('guest_gallery', {slug: wedding.slug, filter: filter.value, vor: next}) }}" loading="lazy" class="more" data-controller="load-early">
             <a class="button button--secondary button--block" href="{{ path('guest_gallery', {slug: wedding.slug, filter: filter.value, vor: next}) }}">Mehr laden</a>
         </turbo-frame>
     {% endif %}
