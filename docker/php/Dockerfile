@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1
-FROM php:8.4.27-fpm-alpine AS base
+FROM php:8.5.12-fpm-alpine AS base
 
 RUN apk add --no-cache icu-libs icu-data-full libzip fcgi ffmpeg \
  && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS icu-dev libzip-dev linux-headers \
- && docker-php-ext-install -j"$(nproc)" intl pdo_mysql zip opcache \
+ && docker-php-ext-install -j"$(nproc)" intl pdo_mysql zip \
  && pecl install apcu \
  && docker-php-ext-enable apcu \
  && apk del .build-deps
