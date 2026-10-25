@@ -9,7 +9,7 @@
     </header>
 
     <section class="card" aria-labelledby="login-title">
-        <h2 id="login-title" class="headline">Anmelden</h2>
+        <h2 id="login-title" class="headline-md">Anmelden</h2>
         {% if error %}
             <p class="alert" role="alert">{{ error.messageKey|trans(error.messageData, 'security') }}</p>
         {% endif %}

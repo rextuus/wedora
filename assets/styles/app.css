@@ -12,6 +12,9 @@
 @font-face { font-family: "Plus Jakarta Sans"; font-style: normal; font-weight: 400; font-display: swap; src: url("../fonts/plus-jakarta-sans-latin-400-normal.woff2") format("woff2"); }
 @font-face { font-family: "Plus Jakarta Sans"; font-style: normal; font-weight: 500; font-display: swap; src: url("../fonts/plus-jakarta-sans-latin-500-normal.woff2") format("woff2"); }
 @font-face { font-family: "Plus Jakarta Sans"; font-style: normal; font-weight: 600; font-display: swap; src: url("../fonts/plus-jakarta-sans-latin-600-normal.woff2") format("woff2"); }
+/* Stil „Handgeschrieben“ (nur geladen, wenn eine Seite ihn nutzt) */
+@font-face { font-family: "Mansalva"; font-style: normal; font-weight: 400; font-display: swap; src: url("../fonts/mansalva-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Nothing You Could Do"; font-style: normal; font-weight: 400; font-display: swap; src: url("../fonts/nothing-you-could-do-latin-400-normal.woff2") format("woff2"); }
 :root {
     color-scheme: light;
 
@@ -798,3 +801,94 @@ a.drink-explainer__step:hover .drink-explainer__go { text-decoration: underline;
 .prompt-facts dt { color: var(--text-muted); }
 .prompt-facts dd { margin: 0; }
 .field--action { align-self: end; }
+
+/* ---------- Stil „Handgeschrieben“ (Einstellungen → Stil der Seite) ----------
+ * Nach der Einladungskarte: Ziegelrot auf Rosé, Überschriften in kratziger Handschrift (Mansalva),
+ * Zierzeilen in dünner Kuli-Schrift (Nothing You Could Do), gezeichnete Ränder und zittrige Linien.
+ * Fließtext und Bedienelemente bleiben in der gut lesbaren Grundschrift. */
+.theme-handwritten {
+    --bg: #f0e6e2;
+    --bg-raised: #faf5f2;
+    --bg-elevated: #e9dcd7;
+    --bg-input: #f6eeea;
+    --line: #e3cfc8;
+    --line-strong: #cfb2a9;
+    --text: #3b1f1b;
+    --text-muted: #6b3e38;
+    --text-faint: #87534c;
+    --accent: #b5352f;
+    --accent-strong: #962a25;
+    --ink: #c13c35;
+    --on-ink: #ffffff;
+    --sand: #f2d5cf;
+    --on-sand: #7a2620;
+    --sage: #962a25;
+    --like: #c13c35;
+    --font-serif: "Mansalva", "Segoe Print", "Bradley Hand", cursive;
+    --font-script: "Nothing You Could Do", "Segoe Print", "Bradley Hand", cursive;
+    --radius: 12px;
+    --radius-md: 6px;
+    --radius-sm: 4px;
+    --shadow: 0 8px 22px -6px rgba(140, 50, 40, .12), 0 2px 6px -1px rgba(60, 25, 20, .05);
+    --focus: 0 0 0 3px rgba(193, 60, 53, .3);
+    --paper: none;
+    /* Gezeichneter Rand: leicht ungleichmäßige Ecken wie mit dem Stift umrandet */
+    --sketch-radius: 18px 10px 22px 8px / 10px 20px 8px 22px;
+    font-synthesis: none;
+}
+html:has(> body.theme-handwritten) { background: #f0e6e2; }
+.theme-handwritten ::selection { background: var(--ink); }
+
+/* Überschriften: Mansalva hat nur einen Schnitt – etwas Luft zwischen den Buchstaben wie auf der Karte. */
+.theme-handwritten :is(.display, .headline-lg, .headline-md, .headline-sm, .mission__title, .action__title, .codeword, .app-header__title) { letter-spacing: .02em; color: var(--accent); }
+.theme-handwritten .app-header__title { font-style: normal; }
+.theme-handwritten .app-header--overlay .app-header__title { color: #fff; }
+.theme-handwritten .action-primary .action__title { color: var(--on-ink); }
+/* Kursive Zierzeilen werden zur Kuli-Handschrift (kleine Mittellänge, daher größer). */
+.theme-handwritten :is(.tagline, .tile__caption, .lightbox__caption, .detail__caption, .guestbook__text, .drink-example__quote, .nudge__psst, .display em, .headline-lg em, .headline-md em) {
+    font-family: var(--font-script); font-style: normal; font-size: 1.2em; letter-spacing: .03em;
+}
+.theme-handwritten :is(.mission-list a, .ranking li)::before { font-family: var(--font-script); font-style: normal; font-size: 1.15em; }
+.theme-handwritten .guestbook__text { font-size: 1.5rem; line-height: 1.5; color: var(--text); }
+
+/* Flächen ohne fest eingebaute Salbei-Töne */
+.theme-handwritten :is(.app-header, .bottom-nav) { background: rgba(240, 230, 226, .92); }
+.theme-handwritten .button--primary:hover { background: #a8302a; }
+.theme-handwritten :is(.action-primary, .fab) { box-shadow: 0 14px 30px -10px rgba(193, 60, 53, .5); }
+.theme-handwritten .notice--success { background: #f6e9e4; border-color: var(--line-strong); color: var(--accent-strong); }
+.theme-handwritten :is(.ornament--sprig, .ornament--bunting, .guestbook__item .ornament--corner) { color: var(--accent); }
+
+/* Karten mit gezeichnetem Rand */
+.theme-handwritten :is(.card, .mission-list, .wall__item, .drink-explainer, .install-hint) {
+    border-radius: var(--sketch-radius); border: 1.5px solid var(--line-strong);
+}
+.theme-handwritten :is(.action-primary, .action-secondary) { border-radius: var(--sketch-radius); }
+
+/* Titelfoto wie auf der Karte: dünner roter Rahmen, dahinter zwei verrutschte Rahmen. */
+.theme-handwritten .hero__image {
+    border-radius: 0; border: 1.5px solid var(--ink);
+    box-shadow: 7px -6px 0 -1.5px var(--bg), 7px -6px 0 0 var(--ink), -6px 7px 0 -1.5px var(--bg), -6px 7px 0 0 var(--ink);
+}
+
+/* Zeichnungen: Linien zittern leicht (Filter aus components/_theme.html.twig) … */
+.theme-handwritten :is(.motif, .ornament, .duo > svg) { filter: url(#pen-wobble); }
+.theme-handwritten .motif { stroke-width: 1.9; }
+/* … der Zweig wird zum Herz mit Pfeil, der Blütenkranz zum gekritzelten Doppelkreis. */
+.theme-handwritten :is(.ornament--sprig, .ornament--garland) {
+    background: currentColor; -webkit-mask: var(--doodle) center / contain no-repeat; mask: var(--doodle) center / contain no-repeat;
+}
+.theme-handwritten :is(.ornament--sprig, .ornament--garland) > * { display: none; }
+.theme-handwritten .ornament--sprig {
+    --doodle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 24' fill='none' stroke='%23000' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 17C34 15 52 13.5 68 12.5M92 11C110 10 128 8.5 146 7'/%3E%3Cpath d='M138 2.5 147 7 139 12.5'/%3E%3Cpath d='M14 17 7 12M14 17 7 21M20 16.5 13 11.5M20 16.5 14 21'/%3E%3Cpath fill='%23000' stroke-width='1' d='M80 22C71 16 66.5 12 67.5 7.5C68.5 3 75 2.5 80 7.5C85 2.5 91.5 3 92.5 7.5C93.5 12 89 16 80 22Z'/%3E%3C/svg%3E");
+}
+.theme-handwritten .ornament--garland {
+    --doodle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120' fill='none' stroke='%23000' stroke-width='1.3' stroke-linecap='round'%3E%3Cpath d='M64 8C91 9 112 32 111 61C110 90 87 112 58 111C30 110 8 88 9 59C10 33 30 12 56 9.5C60 9 64 9.5 67 10.5'/%3E%3Cpath d='M55 14C84 11 106 34 106 62C106 88 85 107 60 107C33 107 14 86 14 59C14 36 31 17 51 15' opacity='.55'/%3E%3Cpath fill='%23000' stroke-width='.8' d='M101 30C96 26.5 93.5 24 94 21.2C94.6 18.4 98.5 18.2 101 21.3C103.5 18.2 107.4 18.4 108 21.2C108.5 24 106 26.5 101 30Z'/%3E%3C/svg%3E");
+}
+
+/* Auswahl in den Einstellungen: jede Kachel zeigt den Titel im jeweiligen Stil. */
+.theme-pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr)); gap: .75rem; border: 0; margin: 0; padding: 0; }
+.theme-pick__option { display: flex; flex-direction: column; gap: .3rem; padding: .5rem .5rem .75rem; border-radius: var(--radius-md); box-shadow: var(--ring) var(--line); cursor: pointer; font-size: 13px; text-align: center; background: var(--bg-raised); color: var(--text); }
+.theme-pick__sample { display: grid; place-items: center; min-height: 5.5rem; padding: .75rem; border-radius: var(--radius-sm); background: var(--paper), var(--bg); color: var(--accent); font-family: var(--font-serif); font-size: 1.5rem; line-height: 1.2; overflow-wrap: anywhere; }
+.theme-pick__label { font-weight: 600; }
+.theme-pick__option:has(input:checked) { box-shadow: var(--ring) var(--ink), 0 0 0 1px var(--ink); }
+.theme-pick__option:has(input:focus-visible) { box-shadow: var(--ring) var(--ink), var(--focus); }

@@ -1,6 +1,11 @@
 {% extends 'base.html.twig' %}
 
+{# Einstieg und Anmeldung: im Stil der Hochzeit, sobald sie feststeht. #}
+{% block theme_color %}{{ (wedding.presentation.theme ?? null) ? wedding.presentation.theme.color : parent() }}{% endblock %}
+{% block body_attributes %}{% if wedding.presentation.theme ?? null %} class="theme-{{ wedding.presentation.theme.value }}"{% endif %}{% endblock %}
+
 {% block body %}
+    {% if wedding.presentation.theme ?? null %}{{ include('components/_theme.html.twig', {theme: wedding.presentation.theme}) }}{% endif %}
     <main class="page page--center" id="main">
         {% block content %}{% endblock %}
     </main>

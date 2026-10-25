@@ -9,6 +9,7 @@ use App\Wedding\Host\HostPronoun;
 use App\Wedding\Host\WeddingPicture;
 use App\Wedding\NudgeMode;
 use App\Wedding\PhotoLook;
+use App\Wedding\Theme;
 use DateTimeImmutable;
 use Doctrine\ORM\Mapping as ORM;
 use InvalidArgumentException;
@@ -48,6 +49,10 @@ class Presentation
 
     #[ORM\Column(nullable: true)]
     private ?DateTimeImmutable $coverPhotoAt = null;
+
+    /** Gestaltung der Gastseiten (Farben, Schriften, Zeichnungen). */
+    #[ORM\Column(length: 12, enumType: Theme::class, options: ['default' => 'botanical'])]
+    private Theme $theme = Theme::Botanical;
 
     /** Gemeinsamer Look aller Fotos (nur Anzeige). */
     #[ORM\Column(length: 8, enumType: PhotoLook::class, options: ['default' => 'natural'])]
@@ -137,6 +142,16 @@ class Presentation
     public function showsFixedCover(): bool
     {
         return CoverMode::Fixed === $this->coverMode && null !== $this->coverPhotoAt;
+    }
+
+    public function getTheme(): Theme
+    {
+        return $this->theme;
+    }
+
+    public function chooseTheme(Theme $theme): void
+    {
+        $this->theme = $theme;
     }
 
     public function getPhotoLook(): PhotoLook

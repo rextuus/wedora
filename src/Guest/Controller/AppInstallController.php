@@ -47,8 +47,8 @@ final class AppInstallController extends AbstractController
             'lang' => 'de',
             'scope' => GuestCookie::path($slug) . '/',
             'display' => 'standalone',
-            'background_color' => '#fbf9f6',
-            'theme_color' => '#fbf9f6',
+            'background_color' => $wedding->getPresentation()->getTheme()->color(),
+            'theme_color' => $wedding->getPresentation()->getTheme()->color(),
             'icons' => [
                 [
                     'src' => $assets->getUrl('images/app-icon-192.png'),

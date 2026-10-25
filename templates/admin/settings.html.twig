@@ -91,6 +91,26 @@
         </form>
     </section>
 
+    <section class="card" aria-labelledby="theme-title">
+        <h2 id="theme-title" class="headline-sm">Stil der Seite</h2>
+        <p class="muted">Farben, Schriften und Zeichnungen, die eure Gäste sehen – passend zur Einladung. Die Verwaltung bleibt unverändert.</p>
+        <form method="post" action="{{ path('admin_settings_theme', {slug: wedding.slug}) }}" class="stack">
+            {{ include('admin/_csrf.html.twig') }}
+            <fieldset class="theme-pick">
+                <legend class="visually-hidden">Stil</legend>
+                {% for theme in themes %}
+                    <label class="theme-pick__option theme-{{ theme.value }}">
+                        <input class="visually-hidden" type="radio" name="theme" value="{{ theme.value }}"{% if wedding.presentation.theme == theme %} checked{% endif %}>
+                        <span class="theme-pick__sample" aria-hidden="true">{{ wedding.title }}</span>
+                        <span class="theme-pick__label">{{ theme.label }}</span>
+                        <span class="muted">{{ theme.description }}</span>
+                    </label>
+                {% endfor %}
+            </fieldset>
+            <button class="button button--primary" type="submit">Stil speichern</button>
+        </form>
+    </section>
+
     <section class="card" aria-labelledby="look-title">
         <h2 id="look-title" class="headline-sm">Foto-Look</h2>
         <p class="muted">Ein gemeinsamer Look für alle Fotos und Videos – so passen Handyfotos besser zusammen. Nur in der Anzeige: Originale, Downloads und Export bleiben unverändert.</p>

@@ -16,13 +16,13 @@
 
     <section class="card stack" aria-labelledby="recover-title">
         {% if choices is empty %}
-            <h2 id="recover-title" class="headline">Wie heißt du hier?</h2>
+            <h2 id="recover-title" class="headline-md">Wie heißt du hier?</h2>
             <form method="get" class="stack">
                 <div class="field"><label for="recover-name">Dein Name, genau wie beim Beitritt</label><input id="recover-name" name="name" value="{{ name }}" maxlength="40" required autocomplete="off"></div>
                 <button type="submit" class="button button--primary button--block">Weiter</button>
             </form>
         {% else %}
-            <h2 id="recover-title" class="headline">Welches ist dein Codewort, {{ name }}?</h2>
+            <h2 id="recover-title" class="headline-md">Welches ist dein Codewort, {{ name }}?</h2>
             <p class="muted">Du hast es beim ersten Mal bekommen (z. B. als Screenshot). Du hast einen Versuch – danach geht es erst in 15 Minuten weiter.</p>
             <div class="codeword-choices">
                 {% for choice in choices %}

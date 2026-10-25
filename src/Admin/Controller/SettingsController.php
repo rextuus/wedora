@@ -24,6 +24,7 @@ use App\Wedding\ModerationMode;
 use App\Wedding\ModuleType;
 use App\Wedding\NudgeMode;
 use App\Wedding\PhotoLook;
+use App\Wedding\Theme;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use InvalidArgumentException;
@@ -66,6 +67,7 @@ final class SettingsController extends AdminController
             'coverModes' => CoverMode::cases(),
             'pronouns' => HostPronoun::cases(),
             'nudgeModes' => NudgeMode::cases(),
+            'themes' => Theme::cases(),
             'photoLooks' => PhotoLook::cases(),
             'portraitQuestions' => PortraitQuestions::all(CoupleNames::of($wedding)),
             // Vorschau der Looks am neuesten Foto der Hochzeit.
@@ -213,6 +215,21 @@ final class SettingsController extends AdminController
 
         $this->em->flush();
         $this->addFlash('success', 'Handy-Hinweis gespeichert.');
+
+        return $this->redirectToRoute('admin_settings', ['slug' => $slug]);
+    }
+
+    /** Gestaltung der Gastseiten. */
+    #[Route('/stil', name: 'admin_settings_theme', methods: ['POST'])]
+    public function theme(Request $request, string $slug): Response
+    {
+        $wedding = $this->wedding($slug, WeddingPermission::Configure);
+        $this->requireCsrf($request);
+        $wedding
+            ->getPresentation()
+            ->chooseTheme(Theme::tryFrom($request->request->getString('theme')) ?? Theme::Botanical);
+        $this->em->flush();
+        $this->addFlash('success', 'Stil gespeichert.');
 
         return $this->redirectToRoute('admin_settings', ['slug' => $slug]);
     }

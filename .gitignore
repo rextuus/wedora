@@ -30,3 +30,6 @@
 
 # Server-Anleitung mit Adressen und Pfaden – nur lokal
 /docs/deployment.md
+
+# Persönliche Vorlagen (z. B. Einladung) – nicht ins Repository
+/*.pdf

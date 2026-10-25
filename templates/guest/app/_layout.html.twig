@@ -15,10 +15,12 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
 {% endblock %}
 
-{# Gemeinsamer Foto-Look der Hochzeit (Einstellungen), wirkt auch im Vollbild, das an <body> hängt. #}
-{% block body_attributes %} class="look-{{ wedding.presentation.photoLook.value }}"{% endblock %}
+{# Stil und gemeinsamer Foto-Look der Hochzeit (Einstellungen), wirken auch im Vollbild, das an <body> hängt. #}
+{% block theme_color %}{{ wedding.presentation.theme.color }}{% endblock %}
+{% block body_attributes %} class="theme-{{ wedding.presentation.theme.value }} look-{{ wedding.presentation.photoLook.value }}"{% endblock %}
 
 {% block body %}
+    {{ include('components/_theme.html.twig', {theme: wedding.presentation.theme}) }}
     {% set slug = wedding.slug %}
     <a class="skip-link" href="#main">Zum Inhalt springen</a>
     <header class="app-header">
